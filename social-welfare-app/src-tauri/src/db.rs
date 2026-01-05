@@ -1,13 +1,57 @@
-use crate::models::{AnswerSubmission, Question};
+use crate::models::{AnswerSubmission, Question, LearningStats, CategoryStats};
 use chrono::{DateTime, Duration, Utc};
 use rusqlite::{params, Connection, Result};
 use serde_json;
+
+pub fn get_learning_stats() -> Result<LearningStats> {
+    let conn = Connection::open(DB_PATH)?;
+    
+    // Total & Mastered
+    let total: i32 = conn.query_row(
+        "SELECT COUNT(*) FROM questions", 
+        [], 
+        |row| row.get(0)
+    )?;
+    
+    let mastered: i32 = conn.query_row(
+        "SELECT COUNT(*) FROM questions WHERE status = 'mastered'", 
+        [], 
+        |row| row.get(0)
+    )?;
+    
+    // Category Stats
+    let mut stmt = conn.prepare(
+        "SELECT category, COUNT(*), CAST(SUM(CASE WHEN status='mastered' THEN 1 ELSE 0 END) AS INTEGER)
+         FROM questions 
+         GROUP BY category"
+    )?;
+    
+    let cat_iter = stmt.query_map([], |row| {
+        Ok(CategoryStats {
+            category: row.get::<_, Option<String>>(0)?.unwrap_or("未分類".to_string()),
+            total: row.get::<_, i32>(1)?,
+            mastered: row.get::<_, Option<i32>>(2)?.unwrap_or(0),
+        })
+    })?;
+    
+    let mut category_stats = Vec::new();
+    for c in cat_iter {
+        category_stats.push(c?);
+    }
+    
+    Ok(LearningStats {
+        total_questions: total,
+        mastered_questions: mastered,
+        category_stats,
+    })
+}
 
 const DB_PATH: &str = "social_welfare.db";
 
 pub fn init_db() -> Result<()> {
     let conn = Connection::open(DB_PATH)?;
 
+    // Create table (legacy)
     conn.execute(
         "CREATE TABLE IF NOT EXISTS questions (
             id INTEGER PRIMARY KEY,
@@ -24,6 +68,19 @@ pub fn init_db() -> Result<()> {
         [],
     )?;
 
+    // Add new columns if they don't exist (Migration)
+    // rusqlite doesn't have easy "add if not exists", so we try and ignore error
+    let _ = conn.execute("ALTER TABLE questions ADD COLUMN category TEXT", []);
+    let _ = conn.execute("ALTER TABLE questions ADD COLUMN exam_year TEXT", []);
+
+    // ONE-TIME MIGRATION: Update existing non-dummy data to "社会福祉士" / "令和4年度"
+    let _ = conn.execute(
+        "UPDATE questions 
+         SET category = '社会福祉士', exam_year = '令和4年度' 
+         WHERE source_file != 'dummy_data' AND (category IS NULL OR category = '')", 
+        []
+    );
+
     Ok(())
 }
 
@@ -31,10 +88,8 @@ pub fn get_questions_due_today() -> Result<Vec<Question>> {
     let conn = Connection::open(DB_PATH)?;
     let now = Utc::now();
 
-    // next_review_at が現在時刻以前、または NULL (新規) の問題を取得
-    // status が 'mastered' 以外のもの
     let mut stmt = conn.prepare(
-        "SELECT id, question_text, options, correct_answer, explanation, source_file, status, next_review_at, correct_streak, last_reviewed_at 
+        "SELECT id, question_text, options, correct_answer, explanation, source_file, status, next_review_at, correct_streak, last_reviewed_at, category, exam_year
          FROM questions 
          WHERE status != 'mastered' 
          AND (next_review_at IS NULL OR next_review_at <= ?1)
@@ -67,6 +122,55 @@ pub fn get_questions_due_today() -> Result<Vec<Question>> {
             next_review_at,
             correct_streak: row.get(8)?,
             last_reviewed_at,
+            category: row.get(10).unwrap_or(None),
+            exam_year: row.get(11).unwrap_or(None),
+        })
+    })?;
+
+    let mut questions = Vec::new();
+    for question in question_iter {
+        questions.push(question?);
+    }
+
+    Ok(questions)
+}
+
+pub fn get_all_questions() -> Result<Vec<Question>> {
+    let conn = Connection::open(DB_PATH)?;
+    
+    let mut stmt = conn.prepare(
+        "SELECT id, question_text, options, correct_answer, explanation, source_file, status, next_review_at, correct_streak, last_reviewed_at, category, exam_year 
+         FROM questions 
+         ORDER BY id DESC" // Newest first
+    )?;
+
+    let question_iter = stmt.query_map([], |row| {
+        let options_json: String = row.get(2)?;
+        let options: Vec<String> = serde_json::from_str(&options_json).unwrap_or_default();
+
+        let next_review_str: Option<String> = row.get(7)?;
+        let next_review_at = next_review_str
+            .and_then(|s| DateTime::parse_from_rfc3339(&s).ok())
+            .map(|dt| dt.with_timezone(&Utc));
+
+        let last_reviewed_str: Option<String> = row.get(9)?;
+        let last_reviewed_at = last_reviewed_str
+            .and_then(|s| DateTime::parse_from_rfc3339(&s).ok())
+            .map(|dt| dt.with_timezone(&Utc));
+
+        Ok(Question {
+            id: row.get(0)?,
+            question_text: row.get(1)?,
+            options,
+            correct_answer: row.get(3)?,
+            explanation: row.get(4)?,
+            source_file: row.get(5)?,
+            status: row.get(6)?,
+            next_review_at,
+            correct_streak: row.get(8)?,
+            last_reviewed_at,
+            category: row.get(10).unwrap_or(None),
+            exam_year: row.get(11).unwrap_or(None),
         })
     })?;
 
@@ -137,8 +241,8 @@ pub fn insert_questions(questions: Vec<Question>) -> Result<usize> {
         let opts_json = serde_json::to_string(&q.options).unwrap_or("[]".to_string());
         
         tx.execute(
-            "INSERT INTO questions (question_text, options, correct_answer, explanation, source_file, status, next_review_at, correct_streak)
-             VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8)",
+            "INSERT INTO questions (question_text, options, correct_answer, explanation, source_file, status, next_review_at, correct_streak, category, exam_year)
+             VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8, ?9, ?10)",
             params![
                 q.question_text, 
                 opts_json, 
@@ -147,7 +251,9 @@ pub fn insert_questions(questions: Vec<Question>) -> Result<usize> {
                 q.source_file, 
                 "new", 
                 Utc::now().to_rfc3339(), // 即時学習可能にするため現在時刻
-                0
+                0,
+                q.category,
+                q.exam_year
             ]
         )?;
         count += 1;
@@ -185,8 +291,8 @@ pub fn seed_dummy_data() -> Result<()> {
     for (q, opts, ans, exp) in dummy_questions {
         let opts_json = serde_json::to_string(&opts).unwrap();
         conn.execute(
-            "INSERT INTO questions (question_text, options, correct_answer, explanation, source_file, status, next_review_at, correct_streak)
-             VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8)",
+            "INSERT INTO questions (question_text, options, correct_answer, explanation, source_file, status, next_review_at, correct_streak, category, exam_year)
+             VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8, '社会福祉士', 'dummy')",
             params![q, opts_json, ans, exp, "dummy_data", "new", Utc::now().to_rfc3339(), 0]
         )?;
     }

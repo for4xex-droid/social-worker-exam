@@ -1,0 +1,51 @@
+﻿cargo :     Blocking waiting fo
+r file lock on build directory
+発生場所 行:1 文字:1
++ cargo check 2>&1 | Out-File -
+Encoding utf8 build_error_utf8.
+txt
++ ~~~~~~~~~~~~~~~~
+    + CategoryInfo          :  
+   NotSpecified: (    Blockin  
+  g wa...build directory:Str   
+ ing) [], RemoteException
+    + FullyQualifiedErrorId :  
+   NativeCommandError
+ 
+    Checking social-welfare-app
+ v0.1.0 (C:\Users\user\.gemini\
+social-worker-exam\social-welfa
+re-app\src-tauri)
+warning: unused import: `anyhow
+`
+ --> src\gemini.rs:1:14
+  |
+1 | use anyhow::{anyhow, Result
+};
+  |              ^^^^^^
+  |
+  = note: `#[warn(unused_import
+s)]` (part of `#[warn(unused)]`
+) on by default
+
+warning: unused variable: `prom
+pt`
+  --> src\gemini.rs:26:9
+   |
+26 |     let prompt = r#"
+   |         ^^^^^^ help: if th
+is is intentional, prefix it wi
+th an underscore: `_prompt`
+   |
+   = note: `#[warn(unused_varia
+bles)]` (part of `#[warn(unused
+)]`) on by default
+
+warning: `social-welfare-app` (
+lib) generated 2 warnings (run 
+`cargo fix --lib -p social-welf
+are-app` to apply 2 suggestions
+)
+    Finished `dev` profile [uno
+ptimized + debuginfo] target(s)
+ in 15.97s
