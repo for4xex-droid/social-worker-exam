@@ -1,0 +1,8 @@
+/target
+**/*.rs.bk
+Cargo.lock
+.env
+.vscode
+.insta
+*.log
+build_err.txt
