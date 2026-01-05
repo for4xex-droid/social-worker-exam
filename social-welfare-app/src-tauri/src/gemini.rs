@@ -23,20 +23,6 @@ pub async fn generate_quiz_from_pdf(
     let base64_data = general_purpose::STANDARD.encode(&file_content);
 
     // Prompt design
-    let prompt = r#"
-    あなたは社会福祉士国家試験のカリスマ講師です。
-    提供されたPDF資料の内容に基づき、試験に出題されそうな重要なポイントを抽出し、5択式の過去問風クイズを作成してください。
-    
-    【重要要件】
-    1. 出力形式: JSON配列のみ（Markdown記法 ```json ... ``` は含めないでください）。
-    2. arrayの各要素のオブジェクト構造:
-       - "question_text": 問題文（実践的で具体的な状況設定や制度の知識を問うもの）
-       - "options": 選択肢の配列（文字列5つ）
-       - "correct_answer": 正解の選択肢（optionsに含まれる文字列と完全一致）
-       - "explanation": 詳細な解説（なぜ正解なのか、他の選択肢がなぜ間違いなのか）
-    3. 難易度: 本番試験レベル（事例問題なども歓迎）。
-    4. 問題数: 資料から作れるだけ作成してください（最低5問、できれば10問以上）。
-    "#;
 
     // Call Gemini API (Inline Data)
     println!("Sending request to Gemini API...");
@@ -48,18 +34,18 @@ pub async fn generate_quiz_from_pdf(
 
     // Prompt design (Balanced for Volume & Quality)
     let prompt = r#"
-    あなたは社会福祉士国家試験のカリスマ講師です。
-    提供されたPDF資料の内容に基づき、試験に出題されそうな重要なポイントを抽出し、5択式の過去問風クイズを作成してください。
+    あなたは社会福祉士・精神保健福祉士国家試験のカリスマ講師です。
+    提供されたPDF資料を徹底的に分析し、本番試験レベルの5択クイズを可能な限り多く作成してください。
     
     【重要要件】
     1. 出力形式: JSON配列のみ。Markdown記法は禁止。
     2. arrayの各要素のオブジェクト構造:
-       - "question_text": 問題文（実践的で具体的な状況設定や制度の知識を問うもの）
+       - "question_text": 問題文（具体的な状況設定や制度の知識を問うもの）
        - "options": 選択肢の配列（文字列5つ）
        - "correct_answer": 正解の選択肢
-       - "explanation": 学習効果を高めるため、簡潔かつ分かりやすい解説を付けてください（2〜3文程度）。
-    3. 問題数: **可能な限り多く（目標: 10問〜20問）** 作成してください。
-       - 資料のボリュームが少ない場合は無理に増やさず、重要な箇所を重点的に作ってください。
+       - "explanation": 簡潔で分かりやすい解説（2〜3文程度）。
+    3. 問題数: **資料の内容が許す限り、最大限多く（目標: 30問〜50問）** 作成してください。
+       - 資料が膨大な場合は重要なポイントを優先してください。
     "#;
 
     let body = json!({

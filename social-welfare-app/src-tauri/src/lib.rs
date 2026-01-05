@@ -75,6 +75,132 @@ async fn test_connection() -> Result<String, String> {
 }
 
 #[tauri::command]
+async fn split_pdf_and_import(
+    app: tauri::AppHandle,
+    file_path: String,
+    category: Option<String>,
+    exam_year: Option<String>,
+) -> Result<String, String> {
+    let clean_path = file_path.replace("\"", "");
+    let path = std::path::Path::new(&clean_path);
+    if !path.exists() {
+        return Err("File not found".to_string());
+    }
+
+    let _ = app.emit("import-status", "Analyzing PDF structure...");
+    let doc =
+        lopdf::Document::load(&clean_path).map_err(|e| format!("Failed to load PDF: {}", e))?;
+    let total_pages = doc.get_pages().len();
+    let pages_per_part = 40;
+
+    let base_name = path.file_stem().unwrap().to_str().unwrap();
+    let parent_dir = path.parent().unwrap();
+
+    let mut total_imported = 0;
+    let parts_count = (total_pages as f64 / pages_per_part as f64).ceil() as usize;
+
+    for i in 0..parts_count {
+        let start_page = (i * pages_per_part) + 1;
+        let end_page = std::cmp::min((i + 1) * pages_per_part, total_pages);
+
+        let _ = app.emit(
+            "import-status",
+            format!(
+                "Extracting part {}/{} (Pages {}-{})...",
+                i + 1,
+                parts_count,
+                start_page,
+                end_page
+            ),
+        );
+
+        // Extract pages for this part
+        let mut part_doc = lopdf::Document::with_version("1.5");
+        let mut pages_dict = lopdf::Dictionary::new();
+        pages_dict.set("Type", lopdf::Object::Name(b"Pages".to_vec()));
+        pages_dict.set("Kids", lopdf::Object::Array(vec![].into()));
+        pages_dict.set("Count", lopdf::Object::Integer(0));
+        let pages_obj_id = part_doc.add_object(pages_dict);
+
+        // This is a simplified extraction logic using lopdf
+        // For production, a more robust page copy is needed, but we try a basic approach:
+        let mut kids = vec![];
+        let mut count = 0;
+
+        let page_numbers: Vec<u32> = (start_page as u32..=end_page as u32).collect();
+        // Page numbers are 1-based, we use collect_pages to get the actual pages
+        let pages = doc.get_pages();
+        for &page_num in &page_numbers {
+            if let Some(&page_id) = pages.get(&page_num) {
+                // Copy the page object and its dependencies (simplified)
+                if let Ok(page_object) = doc.get_object(page_id) {
+                    let mut cloned_page = page_object.clone();
+                    if let Ok(dict) = cloned_page.as_dict_mut() {
+                        dict.set("Parent", pages_obj_id);
+                    }
+                    let new_id = part_doc.add_object(cloned_page);
+                    kids.push(lopdf::Object::Reference(new_id));
+                    count += 1;
+                }
+            }
+        }
+
+        if let Ok(lopdf::Object::Dictionary(ref mut dict)) = part_doc.get_object_mut(pages_obj_id) {
+            dict.set("Kids", kids);
+            dict.set("Count", count as i64);
+        }
+
+        let mut root_dict = lopdf::Dictionary::new();
+        root_dict.set("Type", lopdf::Object::Name(b"Catalog".to_vec()));
+        root_dict.set("Pages", lopdf::Object::Reference(pages_obj_id));
+        let root_id = part_doc.add_object(root_dict);
+
+        part_doc
+            .trailer
+            .set("Root", lopdf::Object::Reference(root_id));
+
+        let part_filename = format!("{}_part_{}.pdf", base_name, i + 1);
+        let part_path = parent_dir.join(&part_filename);
+        part_doc
+            .save(&part_path)
+            .map_err(|e| format!("Failed to save part: {}", e))?;
+
+        // Import this part
+        let _ = app.emit(
+            "import-status",
+            format!("Importing part {}/{}...", i + 1, parts_count),
+        );
+
+        // Call the internal logic of import_pdf_questions
+        let questions = gemini::generate_quiz_from_pdf(part_path.to_str().unwrap()).await?;
+
+        // Inject metadata
+        let cat = category.as_ref().map(|s| normalize_string(s.clone()));
+        let year = exam_year.as_ref().map(|s| normalize_string(s.clone()));
+
+        let mut questions_with_meta = questions;
+        for q in &mut questions_with_meta {
+            q.category = cat.clone();
+            q.exam_year = year.clone();
+        }
+
+        let saved_count = db::insert_questions(questions_with_meta).map_err(|e| e.to_string())?;
+        total_imported += saved_count;
+
+        // Rate limit delay
+        if i < parts_count - 1 {
+            let _ = app.emit("import-status", "Waiting 5s for rate limit...");
+            tokio::time::sleep(std::time::Duration::from_secs(5)).await;
+        }
+    }
+
+    Ok(format!(
+        "Total {} questions imported from {} parts.",
+        total_imported, parts_count
+    ))
+}
+
+#[tauri::command]
 fn scan_folder_for_pdfs(folder_path: String) -> Result<Vec<String>, String> {
     let clean_path = folder_path.replace("\"", "");
     let dir = std::path::Path::new(&clean_path);
@@ -101,8 +227,18 @@ fn scan_folder_for_pdfs(folder_path: String) -> Result<Vec<String>, String> {
 }
 
 #[tauri::command]
-fn get_questions() -> Vec<Question> {
-    match db::get_questions_due_today() {
+fn save_session(user_id: i64, mode: String, question_id: i64) -> Result<(), String> {
+    db::save_session(user_id, mode, question_id).map_err(|e| e.to_string())
+}
+
+#[tauri::command]
+fn get_session_last_id(user_id: i64, mode: String) -> Result<Option<i64>, String> {
+    db::get_session_last_id(user_id, mode).map_err(|e| e.to_string())
+}
+
+#[tauri::command]
+fn get_questions(user_id: i64) -> Vec<Question> {
+    match db::get_questions_due_today(user_id) {
         Ok(questions) => questions,
         Err(e) => {
             eprintln!("Error fetching questions: {}", e);
@@ -112,8 +248,8 @@ fn get_questions() -> Vec<Question> {
 }
 
 #[tauri::command]
-fn get_all_questions() -> Vec<Question> {
-    match db::get_all_questions() {
+fn get_all_questions(user_id: i64) -> Vec<Question> {
+    match db::get_all_questions(user_id) {
         Ok(questions) => questions,
         Err(e) => {
             eprintln!("Error fetching all questions: {}", e);
@@ -123,17 +259,83 @@ fn get_all_questions() -> Vec<Question> {
 }
 
 #[tauri::command]
-fn get_stats() -> Result<models::LearningStats, String> {
-    db::get_learning_stats().map_err(|e| e.to_string())
+fn get_questions_by_category(category: String, user_id: i64) -> Vec<Question> {
+    match db::get_questions_by_category(category, user_id) {
+        Ok(questions) => questions,
+        Err(e) => {
+            eprintln!("Error fetching questions by category: {}", e);
+            vec![]
+        }
+    }
 }
 
 #[tauri::command]
-fn submit_answer(id: i64, is_correct: bool) -> Result<(), String> {
+fn get_stats(user_id: i64) -> Result<models::LearningStats, String> {
+    db::get_learning_stats(user_id).map_err(|e| e.to_string())
+}
+
+#[tauri::command]
+fn get_wrong_questions(user_id: i64) -> Vec<Question> {
+    match db::get_wrong_questions(user_id) {
+        Ok(questions) => questions,
+        Err(e) => {
+            eprintln!("Error fetching wrong questions: {}", e);
+            vec![]
+        }
+    }
+}
+
+#[tauri::command]
+fn cleanup_duplicates() -> Result<usize, String> {
+    db::cleanup_similar_questions().map_err(|e| e.to_string())
+}
+
+#[tauri::command]
+fn export_questions() -> Result<String, String> {
+    db::export_questions_to_json().map_err(|e| e.to_string())
+}
+
+#[tauri::command]
+fn import_questions(json_data: String) -> Result<usize, String> {
+    db::import_questions_from_json(json_data).map_err(|e| e.to_string())
+}
+
+#[tauri::command]
+fn export_user_data(user_id: i64) -> Result<String, String> {
+    db::export_user_data(user_id).map_err(|e| e.to_string())
+}
+
+#[tauri::command]
+fn import_user_data(user_id: i64, data: String) -> Result<(), String> {
+    db::import_user_data(user_id, data).map_err(|e| e.to_string())
+}
+
+#[tauri::command]
+fn get_study_history(user_id: i64) -> Vec<(String, i32)> {
+    match db::get_study_history(user_id) {
+        Ok(h) => h,
+        Err(_) => vec![],
+    }
+}
+
+#[tauri::command]
+fn submit_answer(id: i64, user_id: i64, is_correct: bool) -> Result<(), String> {
     let submission = models::AnswerSubmission {
         question_id: id,
+        user_id,
         is_correct,
     };
     db::register_result(submission).map_err(|e| e.to_string())
+}
+
+#[tauri::command]
+fn get_users() -> Result<Vec<models::User>, String> {
+    db::get_users().map_err(|e| e.to_string())
+}
+
+#[tauri::command]
+fn create_user(name: String) -> Result<i64, String> {
+    db::create_user(name).map_err(|e| e.to_string())
 }
 
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
@@ -166,7 +368,21 @@ pub fn run() {
             submit_answer,
             import_pdf_questions,
             test_connection,
-            scan_folder_for_pdfs
+            scan_folder_for_pdfs,
+            get_questions_by_category,
+            split_pdf_and_import,
+            cleanup_duplicates,
+            get_wrong_questions,
+            get_stats,
+            get_users,
+            create_user,
+            get_study_history,
+            export_user_data,
+            import_user_data,
+            export_questions,
+            import_questions,
+            save_session,
+            get_session_last_id
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");
