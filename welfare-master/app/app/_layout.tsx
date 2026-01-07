@@ -1,36 +1,17 @@
 import "./global.css";
 import { useEffect, useState } from 'react';
-import { Stack, useRouter, useSegments } from 'expo-router';
-import { initializeDb } from '../db/client';
+import { Stack } from 'expo-router';
 import { View, ActivityIndicator } from 'react-native';
-import AsyncStorage from '@react-native-async-storage/async-storage';
-
-// --- TEST SETTINGS ---
-// テスト運用中にオンボーディングをスキップしたい場合はここを 'false' に設定してください
-const SHOW_ONBOARDING_FLOW = true;
-// ---------------------
+import { initializeDb } from '../db/client';
 
 export default function Layout() {
     const [isInitReady, setInitReady] = useState(false);
-    const router = useRouter();
-    const segments = useSegments();
 
     useEffect(() => {
         const init = async () => {
             try {
-                // 1. Initialize Database
+                // Now safe to call because it's guarded internally
                 await initializeDb();
-
-                // 2. Check Onboarding Status
-                if (SHOW_ONBOARDING_FLOW) {
-                    const completed = await AsyncStorage.getItem('onboarding_completed');
-                    const inOnboarding = segments[0] === 'onboarding';
-
-                    if (!completed && !inOnboarding) {
-                        // Not completed and not already there, redirect
-                        router.replace('/onboarding');
-                    }
-                }
             } catch (e) {
                 console.error("Initialization error:", e);
             } finally {
@@ -38,7 +19,7 @@ export default function Layout() {
             }
         };
         init();
-    }, [segments]);
+    }, []);
 
     if (!isInitReady) {
         return (
@@ -51,9 +32,7 @@ export default function Layout() {
     return (
         <Stack screenOptions={{ headerShown: false }}>
             <Stack.Screen name="index" />
-            <Stack.Screen name="onboarding" />
-            <Stack.Screen name="purchase" />
-            <Stack.Screen name="quiz/[id]" options={{ presentation: 'fullScreenModal' }} />
+            <Stack.Screen name="(tabs)" />
         </Stack>
     );
 }

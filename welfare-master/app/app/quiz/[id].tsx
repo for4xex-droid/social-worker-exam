@@ -231,17 +231,25 @@ export default function QuizPlayer() {
     };
 
     const cycleTextSize = () => {
-        setTextSizeMode(prev => (prev + 1) % 4);
+        setTextSizeMode(prev => (prev + 1) % 3);
     };
 
     // Calculate dynamic font sizes
     const fontSizes = [
-        { q: 15, opt: 14, exp: 13 }, // 0: Small
-        { q: 18, opt: 16, exp: 15 }, // 1: Normal
-        { q: 22, opt: 20, exp: 18 }, // 2: Large
-        { q: 26, opt: 24, exp: 22 }, // 3: XL
+        { q: 16, opt: 15, exp: 14 }, // 0: Small
+        { q: 20, opt: 17, exp: 16 }, // 1: Medium (Default)
+        { q: 24, opt: 20, exp: 19 }, // 2: Large
     ];
     const currentSizes = fontSizes[textSizeMode];
+
+    const getSizeLabel = (mode: number) => {
+        switch (mode) {
+            case 0: return 'S';
+            case 1: return 'M';
+            case 2: return 'L';
+            default: return 'M';
+        }
+    };
 
     if (loading) {
         return (
@@ -277,7 +285,7 @@ export default function QuizPlayer() {
                 <TouchableOpacity onPress={cycleTextSize} className="w-10 h-10 items-center justify-center bg-slate-50 rounded-full">
                     <Type size={18} color="#64748b" />
                     <View className="absolute -top-1 -right-1 w-4 h-4 rounded-full items-center justify-center" style={{ backgroundColor: brandColor }}>
-                        <Text className="text-[8px] text-white font-bold">{textSizeMode + 1}</Text>
+                        <Text className="text-[8px] text-white font-bold">{getSizeLabel(textSizeMode)}</Text>
                     </View>
                 </TouchableOpacity>
             </View>

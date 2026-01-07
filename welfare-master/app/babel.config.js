@@ -5,7 +5,8 @@ module.exports = function (api) {
             ["babel-preset-expo", { jsxImportSource: "nativewind" }],
         ],
         plugins: [
-            "react-native-reanimated/plugin",
+            // Reanimated を一時的に無効化（Worklets バージョン不一致のため）
+            // "react-native-reanimated/plugin",
         ],
     };
 };

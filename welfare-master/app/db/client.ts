@@ -1,34 +1,67 @@
-import { drizzle } from 'drizzle-orm/expo-sqlite';
-import { openDatabaseSync } from 'expo-sqlite';
 import * as schema from './schema';
 import { sql } from 'drizzle-orm';
-import masterData from '../assets/master_database.json';
+import { Platform } from 'react-native';
 
 const DB_NAME = 'welfare_master.db';
 
-const expoDb = openDatabaseSync(DB_NAME);
-export const db = drizzle(expoDb, { schema });
+// 実行時に動的に読み込む（トップレベルでは読み込まない）
+let expoDb: any = null;
+export let db: any = null;
 
-/**
- * Initialize database and seed data
- */
-export const initializeDb = async () => {
+const getDb = () => {
+    if (db) return db;
+    if (Platform.OS === 'web') return null;
+
     try {
-        console.log('Checking database status...');
-        const result = await db.select().from(schema.questions).limit(1);
+        // トップレベルでのインポートを避けるため、requireを使用
+        const { openDatabaseSync } = require('expo-sqlite');
+        const { drizzle } = require('drizzle-orm/expo-sqlite');
 
-        // Even if not empty, we run seed to sync latest master_database.json changes
-        // while preserving user progress thanks to onConflictDoUpdate
-        await seedDatabase();
+        if (!expoDb) {
+            expoDb = openDatabaseSync(DB_NAME);
+        }
 
+        if (expoDb && !db) {
+            db = drizzle(expoDb, { schema });
+        }
+        return db;
     } catch (e) {
-        console.log('Error initializing DB, attempting recovery...', e);
+        console.error("Failed to load ExpoSQLite Native Module:", e);
+        return null;
+    }
+};
+
+export const initializeDb = async () => {
+    if (Platform.OS === 'web') return;
+
+    const currentDb = getDb();
+    if (!currentDb || !expoDb) {
+        console.log('Database not available.');
+        return;
+    }
+
+    try {
+        // まずテーブルを作成
+        await createTables();
+
+        console.log('Checking database status...');
+        const result = await currentDb.select({ count: sql`count(*)` }).from(schema.questions);
+        const count = (result[0] as any).count || 0;
+
+        if (count === 0) {
+            await seedDatabase();
+        } else {
+            console.log(`Database already has ${count} questions.`);
+        }
+    } catch (e) {
+        console.log('Error initializing DB, creating tables...', e);
         await createTables();
         await seedDatabase();
     }
 };
 
 const createTables = async () => {
+    if (!expoDb) return;
     await expoDb.execAsync(`
       CREATE TABLE IF NOT EXISTS questions (
         id TEXT PRIMARY KEY NOT NULL,
@@ -50,14 +83,17 @@ const createTables = async () => {
         timestamp INTEGER NOT NULL
       );
     `);
-}
+    console.log('Tables created.');
+};
 
 const seedDatabase = async () => {
-    const batchSize = 50;
-    // @ts-ignore
-    const data = masterData as any[];
+    const currentDb = getDb();
+    if (!currentDb) return;
 
-    console.log(`Syncing ${data.length} questions from master data...`);
+    console.log("Seeding database...");
+    const masterData = require("../assets/master_database.json");
+    const batchSize = 50;
+    const data = masterData as any[];
 
     for (let i = 0; i < data.length; i += batchSize) {
         const batch = data.slice(i, i + batchSize).map(item => ({
@@ -72,8 +108,7 @@ const seedDatabase = async () => {
             isFree: item.is_free ? 1 : 0,
         }));
 
-        // @ts-ignore
-        await db.insert(schema.questions).values(batch).onConflictDoUpdate({
+        await currentDb.insert(schema.questions).values(batch).onConflictDoUpdate({
             target: schema.questions.id,
             set: {
                 questionText: sql`excluded.question_text`,

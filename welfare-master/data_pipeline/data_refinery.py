@@ -100,13 +100,15 @@ def generate_cleaned_data(question_data, group_id):
         1. **問題文**: 過去問なので、原則として「原文のまま」出力してください。（明らかな誤字のみ修正可）
         2. **解説**: 元の解説を参考にしつつ、**完全に自分の言葉で、初心者にもわかるように**書き直してください。
            - 専門用語には簡単な補足をいれること。
+           - **重要なキーワードやポイントは `**` で囲んで太字にしてください。**
+           - **特に覚えたい専門用語は `【】` で囲んで強調してください。**
            - 文体は「〜です」「〜だよ」など、柔らかいトーンに統一すること。
            - **絶対に元の解説のコピペにならないようにすること。**
         
         【出力JSON形式】
         {{
             "question_text": "問題文(原文維持)...",
-            "explanation": "AIオリジナルのわかりやすい解説...",
+            "explanation": "AIオリジナルのわかりやすい解説...ここが**重要**です。これは【専門用語】です。",
             "options": ["選択肢1", "選択肢2"...],
             "correct_answer": ["正解選択肢"] (配列形式で)
         }}
@@ -129,11 +131,13 @@ def generate_cleaned_data(question_data, group_id):
         1. **著作権洗浄**: 元の文章表現は全て捨ててください。「問われている知識(Fact)」だけを抽出してください。
         2. **再構築**: その知識を問うための、**新しい「事例問題（Aさんは〜）」**を作成してください。
         3. **解説**: その事例に沿った、学習効果の高い解説を作成してください。
+           - **重要なキーワードやポイントは `**` で囲んで太字にしてください。**
+           - **特に覚えたい専門用語は `【】` で囲んで強調してください。**
         
         【出力JSON形式】
         {{
             "question_text": "Aさんは...(事例形式の新しい問題文)",
-            "explanation": "正解は...。なぜなら...(新しい解説)",
+            "explanation": "正解は...。なぜなら...ここは**重要**です。これは【専門用語】です。",
             "options": ["新しい選択肢1", "選択肢2"...],
             "correct_answer": ["正解選択肢"] (配列形式で)
         }}
@@ -153,6 +157,16 @@ def generate_cleaned_data(question_data, group_id):
             )
             result = json.loads(response.text)
 
+            # Geminiがリストで返してくる場合への安全対策
+            if isinstance(result, list):
+                if len(result) > 0:
+                    result = result[0]
+                else:
+                    raise ValueError("Empty list returned from Gemini")
+
+            if not isinstance(result, dict):
+                raise ValueError(f"Unexpected response type: {type(result)}")
+
             # 共通フィールドの付与
             result["id"] = str(
                 question_data.get("id", hash(result["question_text"]))
@@ -164,8 +178,16 @@ def generate_cleaned_data(question_data, group_id):
             )  # 元の細かい科目名
 
             # is_free フラグの設定ロジック
-            years = result["year"] if result["year"] else ""
-            if "令和4" in years or "2022" in years:
+            # yearがリストや文字列など様々な型で返る可能性があるため安全に処理
+            raw_year = result.get("year")
+            if isinstance(raw_year, list):
+                years_str = "".join(str(y) for y in raw_year)
+            elif isinstance(raw_year, str):
+                years_str = raw_year
+            else:
+                years_str = ""
+
+            if "令和4" in years_str or "2022" in years_str:
                 result["is_free"] = True
             else:
                 result["is_free"] = False
