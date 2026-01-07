@@ -9,10 +9,32 @@ use std::path::Path;
 pub async fn generate_quiz_from_pdf(
     file_path: &str,
 ) -> Result<Vec<crate::models::Question>, String> {
-    let api_key = env::var("GEMINI_API_KEY")
-        .map_err(|_| "GEMINI_API_KEY not set in environment".to_string())?;
+    // Load all keys
+    dotenv::dotenv().ok(); // Load from .env if present
+    let keys_str = env::var("GEMINI_API_KEYS").unwrap_or_default();
+    let mut api_keys: Vec<String> = keys_str
+        .split(',')
+        .map(|s| s.trim().to_string())
+        .filter(|s| !s.is_empty())
+        .collect();
 
-    // Path check
+    // Fallback to single key if list is empty
+    if api_keys.is_empty() {
+        if let Ok(single) = env::var("GEMINI_API_KEY") {
+            api_keys.push(single);
+        }
+    }
+
+    if api_keys.is_empty() {
+        return Err("No GEMINI_API_KEYS found in environment".to_string());
+    }
+
+    // Simple Rotation Strategy: Random Selection for now (Stateless)
+    // In a real app, we might want round-robin with atomic counter, but random is good enough for load balancing here.
+    use rand::seq::SliceRandom;
+    let api_key = api_keys
+        .choose(&mut rand::thread_rng())
+        .ok_or("Failed to select API key")?;
     let path = Path::new(file_path);
     if !path.exists() {
         return Err(format!("File not found at: {}", file_path));

@@ -1,38 +1,30 @@
-import { View, Text, ScrollView, TouchableOpacity, ActivityIndicator, Image } from 'react-native';
+import { View, Text, ScrollView, TouchableOpacity, ActivityIndicator } from 'react-native';
 import { StatusBar } from 'expo-status-bar';
 import { useRouter, useFocusEffect } from 'expo-router';
-import { BookOpen, Trophy, ArrowRight, Lock, CheckCircle, Flame, Target, Star, Bell } from 'lucide-react-native';
+import { Trophy, ArrowRight, Lock, Flame, Target, Star, Bell } from 'lucide-react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useEffect, useState, useCallback } from 'react';
 import { LinearGradient } from 'expo-linear-gradient';
-import { initializeDb } from '../db/client';
+import { initializeDb, db } from '../db/client';
 import { useBookshelf } from '../hooks/useBookshelf';
-import { db } from '../db/client';
 import { questions } from '../db/schema';
 import { eq } from 'drizzle-orm';
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import Constants from 'expo-constants';
 
 export default function Home() {
     const router = useRouter();
     const { items: bookshelfItems, loading: bookshelfLoading, refresh: refreshBookshelf } = useBookshelf();
     const [reviewCount, setReviewCount] = useState(0);
-    const [userLicense, setUserLicense] = useState<{ label: string, emoji: string }>({ label: '受験生', emoji: '🦊' });
+
+    // Get flavor config
+    const flavor = Constants.expoConfig?.extra?.flavor || 'social';
+    const flavorTitle = Constants.expoConfig?.extra?.title || '社会福祉士';
+    const brandColor = Constants.expoConfig?.extra?.brandColor || '#FF6B00';
+    const flavorEmoji = Constants.expoConfig?.extra?.iconEmoji || '🧑‍💼';
 
     useEffect(() => {
         initializeDb();
-        const loadUserLicense = async () => {
-            const licenseId = await AsyncStorage.getItem('user_license');
-            if (licenseId) {
-                const map: Record<string, { label: string, emoji: string }> = {
-                    'care': { label: '介護福祉士', emoji: '👵' },
-                    'social': { label: '社会福祉士', emoji: '🧑‍💼' },
-                    'mental': { label: '精神保健福祉士', emoji: '🧠' },
-                    'none': { label: '受験生', emoji: '🦊' }
-                };
-                if (map[licenseId]) setUserLicense(map[licenseId]);
-            }
-        };
-        loadUserLicense();
     }, []);
 
     useFocusEffect(
@@ -65,6 +57,7 @@ export default function Home() {
 
     const handleBookPress = async (bookId: string) => {
         try {
+            // Find any question with this year/group to jump into
             const result = await db.select().from(questions)
                 .where(eq(questions.year, bookId))
                 .limit(1);
@@ -72,7 +65,13 @@ export default function Home() {
             if (result.length > 0) {
                 router.push(`/quiz/${result[0].id}`);
             } else {
-                console.warn("No questions found for book:", bookId);
+                // Try group if year check fails
+                const resultGroup = await db.select().from(questions)
+                    .where(eq(questions.group, bookId))
+                    .limit(1);
+                if (resultGroup.length > 0) {
+                    router.push(`/quiz/${resultGroup[0].id}`);
+                }
             }
         } catch (e) {
             console.error("Error starting quiz", e);
@@ -98,20 +97,20 @@ export default function Home() {
             <StatusBar style="dark" />
 
             {/* Header Area */}
-            <View className="px-6 py-6 bg-white flex-row justify-between items-center">
+            <View className="px-6 py-6 bg-white flex-row justify-between items-center shadow-sm z-10">
                 <View>
-                    <Text className="text-gray-400 text-xs font-bold tracking-[2px] uppercase mb-1">
-                        Workspace
+                    <Text className="text-gray-400 text-[10px] font-bold tracking-[2px] uppercase mb-0.5">
+                        Qualified Learning System
                     </Text>
                     <View className="flex-row items-center gap-2">
-                        <Text className="text-2xl font-black text-slate-900">
+                        <Text className="text-2xl font-black text-slate-900 tracking-tighter">
                             Welfare Master
                         </Text>
                     </View>
                 </View>
-                <TouchableOpacity className="w-10 h-10 bg-slate-100 rounded-full items-center justify-center border border-slate-200">
+                <TouchableOpacity className="w-10 h-10 bg-slate-50 rounded-full items-center justify-center border border-slate-100 shadow-sm">
                     <Bell size={20} color="#64748b" />
-                    <View className="absolute top-2 right-2 w-2.5 h-2.5 bg-orange-500 rounded-full border-2 border-white" />
+                    <View className="absolute top-2.5 right-2.5 w-2.5 h-2.5 bg-orange-500 rounded-full border-2 border-white" />
                 </TouchableOpacity>
             </View>
 
@@ -121,82 +120,96 @@ export default function Home() {
                 contentContainerStyle={{ paddingBottom: 40 }}
             >
                 {/* 1. User Cockpit */}
-                <View className="mx-6 mt-2 mb-8 p-6 bg-white rounded-[32px] shadow-sm border border-slate-100">
-                    <View className="flex-row items-center justify-between mb-6">
-                        <View className="flex-row items-center gap-3">
-                            <View className="w-12 h-12 bg-orange-100 rounded-full items-center justify-center shadow-inner">
-                                <Text className="text-xl">{userLicense.emoji}</Text>
+                <View className="mx-6 mt-6 mb-8 p-6 bg-white rounded-[32px] shadow-sm border border-slate-100">
+                    <View className="flex-row items-center justify-between mb-8">
+                        <View className="flex-row items-center gap-4">
+                            <View className="w-14 h-14 bg-slate-50 rounded-2xl items-center justify-center shadow-inner border border-slate-100">
+                                <Text className="text-2xl">{flavorEmoji}</Text>
                             </View>
                             <View>
-                                <Text className="text-slate-900 font-bold text-lg">利用者さん</Text>
-                                <View className="flex-row items-center gap-1 bg-amber-50 px-2 py-0.5 rounded-md border border-amber-100">
-                                    <Trophy size={10} color="#b45309" fill="#b45309" />
-                                    <Text className="text-amber-800 text-[10px] font-bold uppercase">{userLicense.label}</Text>
+                                <Text className="text-slate-900 font-extrabold text-lg">合格マスター</Text>
+                                <View
+                                    className="flex-row items-center gap-1.5 px-2.5 py-1 rounded-lg border mt-1"
+                                    style={{ backgroundColor: `${brandColor}11`, borderColor: `${brandColor}33` }}
+                                >
+                                    <Trophy size={12} color={brandColor} fill={brandColor} />
+                                    <Text className="text-[10px] font-black uppercase tracking-wider" style={{ color: brandColor }}>{flavorTitle}</Text>
                                 </View>
+                                {/* DEBUG BUTTON: Safely re-added */}
+                                <TouchableOpacity
+                                    onPress={() => router.push('/quiz/102')}
+                                    className="mt-2 bg-slate-900 px-3 py-1.5 rounded-lg self-start"
+                                >
+                                    <Text className="text-white text-[10px] font-bold">DEBUG: ID 102</Text>
+                                </TouchableOpacity>
                             </View>
                         </View>
-                        <View className="flex-row items-center bg-orange-50 px-3 py-1.5 rounded-full ring-1 ring-orange-200 border border-orange-100">
-                            <Flame size={14} color="#f97316" fill="#f97316" />
-                            <Text className="text-orange-600 font-bold text-xs ml-1">{userData.streak} Days</Text>
+                        <View
+                            className="flex-row items-center px-4 py-2 rounded-2xl border"
+                            style={{ backgroundColor: `${brandColor}11`, borderColor: `${brandColor}22` }}
+                        >
+                            <Flame size={16} color={brandColor} fill={brandColor} />
+                            <Text className="font-black text-sm ml-1.5" style={{ color: brandColor }}>{userData.streak} Days</Text>
                         </View>
                     </View>
 
                     <View className="flex-row gap-4">
-                        <View className="flex-1 bg-slate-50 p-4 rounded-2xl">
-                            <Text className="text-slate-400 text-[10px] font-bold uppercase tracking-wider mb-1">Countdown</Text>
-                            <View className="flex-row items-baseline gap-1">
-                                <Text className="text-2xl font-black text-slate-900">{userData.daysLeft}</Text>
-                                <Text className="text-slate-400 text-xs font-bold">days</Text>
+                        <View className="flex-1 bg-slate-50 p-5 rounded-[24px]">
+                            <Text className="text-slate-400 text-[10px] font-black uppercase tracking-[2px] mb-2">Exam Date</Text>
+                            <View className="flex-row items-baseline gap-1.5">
+                                <Text className="text-3xl font-black text-slate-900 tracking-tighter">{userData.daysLeft}</Text>
+                                <Text className="text-slate-400 text-xs font-black uppercase">Days</Text>
                             </View>
                         </View>
-                        <View className="flex-1 bg-slate-50 p-4 rounded-2xl">
-                            <Text className="text-slate-400 text-[10px] font-bold uppercase tracking-wider mb-1">Target</Text>
-                            <View className="flex-row items-baseline gap-1">
-                                <Text className="text-2xl font-black text-slate-900">{userData.targetPoints}</Text>
-                                <Text className="text-slate-400 text-xs font-bold">%</Text>
+                        <View className="flex-1 bg-slate-50 p-5 rounded-[24px]">
+                            <Text className="text-slate-400 text-[10px] font-black uppercase tracking-[2px] mb-2">Target Score</Text>
+                            <View className="flex-row items-baseline gap-1.5">
+                                <Text className="text-3xl font-black text-slate-900 tracking-tighter">{userData.targetPoints}</Text>
+                                <Text className="text-slate-400 text-xs font-black uppercase">%</Text>
                             </View>
                         </View>
                     </View>
                 </View>
 
-                {/* 2. Today's Quest Card (Premium Gradient) */}
-                <View className="mx-6 mb-10 shadow-lg shadow-orange-200" style={{ borderRadius: 32, overflow: 'hidden' }}>
+                {/* 2. Today's Quest Card */}
+                <View className="mx-6 mb-10 shadow-xl shadow-orange-200" style={{ borderRadius: 32, overflow: 'hidden' }}>
                     <TouchableOpacity
                         onPress={handleQuestPress}
                         activeOpacity={0.9}
                     >
                         <LinearGradient
-                            colors={['#FF8C37', '#FF6B00']}
+                            colors={[brandColor, brandColor]}
                             start={{ x: 0, y: 0 }}
                             end={{ x: 1, y: 1 }}
-                            style={{ padding: 24, minHeight: 160, position: 'relative' }}
+                            style={{ padding: 28, minHeight: 180, position: 'relative' }}
                         >
-                            {/* Glassmorphic circles */}
-                            <View className="absolute -right-10 -top-10 w-44 h-44 bg-white/10 rounded-full" />
-                            <View className="absolute -left-10 -bottom-10 w-32 h-32 bg-white/5 rounded-full" />
+                            <View className="absolute -right-10 -top-10 w-48 h-48 bg-white/10 rounded-full" />
+                            <View className="absolute -left-10 -bottom-10 w-36 h-36 bg-white/5 rounded-full" />
 
-                            <View className="flex-row items-center gap-2 mb-3">
-                                <Target size={14} color="white" />
-                                <Text className="text-white font-bold opacity-80 text-[10px] tracking-[2px] uppercase">
-                                    Today's Mission
+                            <View className="flex-row items-center gap-2 mb-4">
+                                <View className="bg-white/20 p-1.5 rounded-lg border border-white/30">
+                                    <Target size={14} color="white" />
+                                </View>
+                                <Text className="text-white font-black opacity-80 text-[11px] tracking-[3px] uppercase">
+                                    Today's Challenge
                                 </Text>
                             </View>
 
-                            <Text className="text-white text-2xl font-black mb-1">
+                            <Text className="text-white text-3xl font-black mb-1.5 tracking-tight">
                                 {reviewCount > 0 ? "弱点克服クエスト" : "ミッション完了"}
                             </Text>
-                            <Text className="text-orange-50 text-sm font-medium leading-5 mb-4">
+                            <Text className="text-orange-50 text-sm font-bold leading-6 mb-6 opacity-90">
                                 {reviewCount > 0
-                                    ? `残り ${reviewCount} 問の「未習得」を撃破して、\nマスターランクを目指そう。`
-                                    : "本日の学習はすべて完了しました。"}
+                                    ? `残り ${reviewCount} 問の「未習得」を効率よく撃破して、\nマスターランクを目指しましょう。`
+                                    : "本日の学習予定はすべて完了しました。"}
                             </Text>
 
                             <View className="flex-row items-center justify-between mt-auto">
-                                <View className="bg-white/20 px-4 py-2 rounded-full border border-white/30">
-                                    <Text className="text-white font-bold text-xs">+150 EXP</Text>
+                                <View className="bg-white/20 px-5 py-2.5 rounded-full border border-white/30 backdrop-blur-md">
+                                    <Text className="text-white font-black text-xs tracking-widest">+150 EXP</Text>
                                 </View>
-                                <View className="w-12 h-12 bg-white rounded-2xl items-center justify-center shadow-sm">
-                                    <ArrowRight size={20} color="#FF6B00" strokeWidth={3} />
+                                <View className="w-14 h-14 bg-white rounded-[20px] items-center justify-center shadow-lg">
+                                    <ArrowRight size={24} color={brandColor} strokeWidth={4} />
                                 </View>
                             </View>
                         </LinearGradient>
@@ -204,21 +217,23 @@ export default function Home() {
                 </View>
 
                 {/* 3. Bookshelf Section */}
-                <View className="mx-6 mb-10">
-                    <View className="flex-row justify-between items-center mb-6 px-1">
+                <View className="mx-6 mb-12">
+                    <View className="flex-row justify-between items-center mb-8 px-2">
                         <View>
-                            <Text className="text-slate-900 font-black text-xl">Study Materials</Text>
-                            <Text className="text-slate-400 text-xs mt-0.5">過去問・専門別ライブラリ</Text>
+                            <Text className="text-slate-900 font-black text-2xl tracking-tighter">Study Materials</Text>
+                            <Text className="text-slate-400 text-[11px] font-bold uppercase tracking-widest mt-1">過去問・専門別ライブラリ</Text>
                         </View>
                         <TouchableOpacity>
-                            <Text className="text-orange-500 font-bold text-sm">See All</Text>
+                            <Text className="font-black text-sm uppercase tracking-widest" style={{ color: brandColor }}>See All</Text>
                         </TouchableOpacity>
                     </View>
 
                     {bookshelfLoading ? (
-                        <ActivityIndicator size="large" color="#FF6B00" />
+                        <View className="py-20">
+                            <ActivityIndicator size="large" color={brandColor} />
+                        </View>
                     ) : (
-                        <View className="gap-4">
+                        <View className="gap-5">
                             {bookshelfItems.map((item, index) => (
                                 <TouchableOpacity
                                     key={index}
@@ -229,39 +244,40 @@ export default function Home() {
                                             router.push('/purchase');
                                         }
                                     }}
-                                    activeOpacity={0.7}
-                                    className={`bg-white p-5 rounded-[24px] border border-slate-100 flex-row items-center shadow-sm shadow-slate-200 ${item.isLocked ? 'bg-slate-50 border-dashed' : ''}`}
+                                    activeOpacity={0.75}
+                                    className={`bg-white p-6 rounded-[32px] border border-slate-100 flex-row items-center shadow-lg shadow-slate-200/50 ${item.isLocked ? 'bg-slate-50/50 border-dashed' : ''}`}
                                 >
-                                    {/* Book Icon with Depth */}
-                                    <View className={`w-14 h-18 rounded-xl items-center justify-center mr-5 shadow-sm ${item.isLocked ? 'bg-slate-200' : 'bg-slate-50'}`}>
-                                        <View className="absolute inset-0 border-r-4 border-slate-200/50 rounded-xl" />
+                                    <View className={`w-16 h-20 rounded-2xl items-center justify-center mr-6 shadow-sm ${item.isLocked ? 'bg-slate-200' : 'bg-[#FFF8F3]'}`}>
+                                        <View className="absolute inset-0 border-r-4 border-slate-100/30 rounded-2xl" />
                                         {item.isLocked ? (
-                                            <Lock size={20} color="#64748b" />
+                                            <Lock size={24} color="#64748b" />
                                         ) : (
-                                            <Text className="text-3xl">📕</Text>
+                                            <Text className="text-4xl shadow-sm">📕</Text>
                                         )}
                                     </View>
 
                                     <View className="flex-1">
-                                        <View className="flex-row justify-between items-center mb-1">
-                                            <Text className="font-black text-slate-800 text-[17px] tracking-tight">{item.title}</Text>
+                                        <View className="flex-row justify-between items-center mb-2">
+                                            <Text className="font-black text-slate-800 text-lg tracking-tight">{item.title}</Text>
                                             {item.isLocked && (
-                                                <Star size={16} color="#fbbf24" fill="#fbbf24" opacity={0.5} />
+                                                <View className="w-6 h-6 bg-amber-50 rounded-full items-center justify-center border border-amber-100">
+                                                    <Star size={12} color="#fbbf24" fill="#fbbf24" />
+                                                </View>
                                             )}
                                         </View>
-                                        <Text className="text-slate-400 text-xs mb-3">
+                                        <Text className="text-slate-400 text-[10px] font-black uppercase tracking-widest mb-4">
                                             {item.isLocked ? "PREMIUM CONTENT" : `${item.questionCount} Questions included`}
                                         </Text>
 
                                         {!item.isLocked && (
-                                            <View className="flex-row items-center gap-3">
-                                                <View className="flex-1 h-1.5 bg-slate-100 rounded-full overflow-hidden">
+                                            <View className="flex-row items-center gap-4">
+                                                <View className="flex-1 h-2 bg-slate-100 rounded-full overflow-hidden shadow-inner">
                                                     <View
-                                                        className="h-full bg-orange-500 rounded-full"
-                                                        style={{ width: `${item.progress * 100}%` }}
+                                                        className="h-full rounded-full"
+                                                        style={{ width: `${item.progress * 100}%`, backgroundColor: brandColor }}
                                                     />
                                                 </View>
-                                                <Text className="text-slate-900 font-black text-[10px]">
+                                                <Text className="text-slate-900 font-black text-xs">
                                                     {Math.round(item.progress * 100)}%
                                                 </Text>
                                             </View>
@@ -273,47 +289,47 @@ export default function Home() {
                     )}
                 </View>
 
-                {/* 4. Rank & Stats Card */}
-                <View className="mx-6 mb-12 shadow-xl shadow-slate-900/20" style={{ borderRadius: 32, overflow: 'hidden' }}>
+                {/* 4. Rank Card (Bonus) */}
+                <View className="mx-6 mb-12 shadow-2xl shadow-slate-900/10" style={{ borderRadius: 32, overflow: 'hidden' }}>
                     <LinearGradient
                         colors={['#1E293B', '#0F172A']}
-                        style={{ padding: 28, position: 'relative' }}
+                        style={{ padding: 32, position: 'relative' }}
                     >
-                        {/* Decorative background element */}
-                        <View className="absolute -top-20 -right-20 w-60 h-60 bg-blue-500/10 rounded-full" />
+                        <View className="absolute -top-16 -right-16 w-56 h-56 bg-blue-500/10 rounded-full" />
 
-                        <View className="flex-row justify-between items-start mb-8">
+                        <View className="flex-row justify-between items-start mb-10">
                             <View>
-                                <View className="flex-row items-center gap-2 mb-2">
-                                    <Trophy size={14} color="#FBBF24" fill="#FBBF24" />
-                                    <Text className="text-amber-400 font-bold text-[10px] tracking-[3px] uppercase">
+                                <View className="flex-row items-center gap-2 mb-3">
+                                    <View className="bg-amber-400/20 p-1.5 rounded-lg border border-amber-400/30">
+                                        <Trophy size={14} color="#FBBF24" fill="#FBBF24" />
+                                    </View>
+                                    <Text className="text-amber-400 font-black text-[11px] tracking-[4px] uppercase">
                                         Current Rank
                                     </Text>
                                 </View>
-                                <Text className="text-white text-4xl font-black tracking-tighter italic uppercase">
+                                <Text className="text-white text-5xl font-black tracking-tighter italic uppercase underline decoration-amber-400/30">
                                     Beginner
                                 </Text>
                             </View>
-                            <View className="bg-white/10 p-3 rounded-2xl border border-white/10">
-                                <Trophy size={20} color="#FBBF24" />
+                            <View className="bg-white/10 p-4 rounded-3xl border border-white/10 backdrop-blur-xl">
+                                <Trophy size={28} color="#FBBF24" />
                             </View>
                         </View>
 
-                        <View className="h-[1px] bg-white/10 w-full mb-6" />
+                        <View className="h-[1px] bg-white/10 w-full mb-8" />
 
                         <View className="flex-row justify-between">
                             <View>
-                                <Text className="text-slate-400 text-[10px] font-bold uppercase mb-1">Total Score</Text>
-                                <Text className="text-white text-xl font-bold">1,250 pts</Text>
+                                <Text className="text-slate-400 text-[11px] font-black uppercase tracking-[2px] mb-2">Total Score</Text>
+                                <Text className="text-white text-2xl font-black">1,250 pts</Text>
                             </View>
                             <View className="items-end">
-                                <Text className="text-slate-400 text-[10px] font-bold uppercase mb-1">Weekly Goal</Text>
-                                <Text className="text-white text-xl font-bold">85%</Text>
+                                <Text className="text-slate-400 text-[11px] font-black uppercase tracking-[2px] mb-2">Weekly Goal</Text>
+                                <Text className="text-white text-2xl font-black tracking-widest">85%</Text>
                             </View>
                         </View>
                     </LinearGradient>
                 </View>
-
             </ScrollView>
         </SafeAreaView>
     );

@@ -1,6 +1,7 @@
 import json
 import time
 import os
+import random
 import google.generativeai as genai
 from tqdm import tqdm
 from dotenv import load_dotenv
@@ -12,8 +13,21 @@ load_dotenv()
 # 設定エリア
 # ==========================================
 
-# Gemini APIキー
-API_KEY = os.environ.get("GEMINI_API_KEY")
+# Gemini APIキーのリスト取得 (カンマ区切りで複数対応)
+# 例: GEMINI_API_KEYS="key1,key2,key3"
+env_keys = os.environ.get("GEMINI_API_KEYS")
+if env_keys:
+    API_KEYS = [k.strip() for k in env_keys.split(",") if k.strip()]
+else:
+    # フォールバック: 単一キー
+    single_key = os.environ.get("GEMINI_API_KEY")
+    API_KEYS = [single_key] if single_key else []
+
+if not API_KEYS:
+    print("Error: GEMINI_API_KEYS (or GEMINI_API_KEY) environment variable is not set.")
+    exit(1)
+
+print(f"Loaded {len(API_KEYS)} API Key(s).")
 
 # 入力ファイル名
 INPUT_FILE = "raw_questions.json"
@@ -34,11 +48,29 @@ CATEGORY_MAPPING = {
 # システム初期化
 # ==========================================
 
-if not API_KEY:
-    print("Error: GEMINI_API_KEY environment variable is not set.")
-    exit(1)
+# 現在のキーインデックス
+current_key_index = 0
 
-genai.configure(api_key=API_KEY)
+
+def get_current_api_key():
+    return API_KEYS[current_key_index]
+
+
+def rotate_api_key():
+    global current_key_index
+    if len(API_KEYS) > 1:
+        current_key_index = (current_key_index + 1) % len(API_KEYS)
+        print(f"\n[System] Switching to API Key #{current_key_index + 1}")
+    else:
+        print("\n[System] Single API Key in use. Waiting longer instead of switching.")
+        time.sleep(10)  # 予備キーがない場合は待機
+
+
+def configure_genai():
+    genai.configure(api_key=get_current_api_key())
+
+
+configure_genai()
 # コストと速度のバランスが良い Flash モデルを指定
 model = genai.GenerativeModel("gemini-2.0-flash-exp")
 
@@ -47,6 +79,7 @@ def generate_cleaned_data(question_data, group_id):
     """
     カテゴリ(group_id)に応じて、最適なプロンプトでGeminiを呼び出す
     """
+    global model
 
     # -------------------------------------------------------
     # パターンA: 過去問の場合 (past_social, past_mental)
@@ -106,10 +139,15 @@ def generate_cleaned_data(question_data, group_id):
         }}
         """
 
-    # API呼び出し
-    max_retries = 3
+    # API呼び出し (Retry Logic with Rotation)
+    max_retries = 5
+    base_wait = 2
+
     for attempt in range(max_retries):
         try:
+            # 常に最新の設定で実行
+            configure_genai()
+
             response = model.generate_content(
                 prompt, generation_config={"response_mime_type": "application/json"}
             )
@@ -125,12 +163,9 @@ def generate_cleaned_data(question_data, group_id):
                 "raw_category", "一般"
             )  # 元の細かい科目名
 
-            # is_free フラグの設定ロジック (例: 令和4年度のみ無料)
-            # yearの文字列に "令和4年度" が含まれていれば無料とするサンプル
+            # is_free フラグの設定ロジック
             years = result["year"] if result["year"] else ""
-            if (
-                "令和4" in years or "2022" in years
-            ):  # Adjust based on your actual year string format
+            if "令和4" in years or "2022" in years:
                 result["is_free"] = True
             else:
                 result["is_free"] = False
@@ -138,10 +173,21 @@ def generate_cleaned_data(question_data, group_id):
             return result
 
         except Exception as e:
+            error_msg = str(e)
+            print(
+                f"\n[Warning] Attempt {attempt + 1}/{max_retries} failed: {error_msg}"
+            )
+
+            # 429 Error (Resource Exhausted) -> Rotate Key
+            if "429" in error_msg or "Resource has been exhausted" in error_msg:
+                rotate_api_key()
+
             if attempt < max_retries - 1:
-                time.sleep(2)  # Wait before retry
+                wait_time = base_wait * (2**attempt) + random.uniform(0, 1)
+                time.sleep(wait_time)
                 continue
-            print(f"\n[Error] ID: {question_data.get('id')} の処理中にエラー: {e}")
+
+            print(f"\n[Error] ID: {question_data.get('id')} Failed after retries.")
             return None
 
 
@@ -172,7 +218,8 @@ def main():
             # 既存データのIDをセットに格納（重複処理防止）
             processed_ids = {str(item["id"]) for item in processed_data}
             print(f"既存のデータ {len(processed_data)} 件をスキップします。")
-        except:
+        except Exception as e:
+            print(f"[Warning] Failed to load existing data: {e}. Starting fresh.")
             processed_ids = set()
     else:
         processed_ids = set()
@@ -196,12 +243,12 @@ def main():
             processed_data.append(cleaned_item)
             processed_ids.add(str(cleaned_item["id"]))  # 処理済みIDに追加
 
-            # 安全のため、10問ごとにファイルに書き出す
-            if len(processed_data) % 10 == 0:
+            # 安全のため、5問ごとにファイルに書き出す
+            if len(processed_data) % 5 == 0:
                 with open(OUTPUT_FILE, "w", encoding="utf-8") as f:
                     json.dump(processed_data, f, ensure_ascii=False, indent=2)
 
-        time.sleep(1.2)
+        time.sleep(1.0)  # 基本待機時間を確保
 
     # 最終保存
     with open(OUTPUT_FILE, "w", encoding="utf-8") as f:

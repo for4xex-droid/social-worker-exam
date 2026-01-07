@@ -1,8 +1,7 @@
 import { drizzle } from 'drizzle-orm/expo-sqlite';
 import { openDatabaseSync } from 'expo-sqlite';
 import * as schema from './schema';
-import { Asset } from 'expo-asset';
-import * as FileSystem from 'expo-file-system';
+import { sql } from 'drizzle-orm';
 import masterData from '../assets/master_database.json';
 
 const DB_NAME = 'welfare_master.db';
@@ -11,34 +10,25 @@ const expoDb = openDatabaseSync(DB_NAME);
 export const db = drizzle(expoDb, { schema });
 
 /**
- * Initialize database and seed data if empty
+ * Initialize database and seed data
  */
 export const initializeDb = async () => {
     try {
-        // Check if table exists (simple check)
-        // In production, better to use migrations, but for this prototype we'll check rows
+        console.log('Checking database status...');
         const result = await db.select().from(schema.questions).limit(1);
 
-        if (result.length === 0) {
-            console.log('Database empty, seeding master data...');
-            await seedDatabase();
-        } else {
-            console.log('Database already initialized.');
-        }
+        // Even if not empty, we run seed to sync latest master_database.json changes
+        // while preserving user progress thanks to onConflictDoUpdate
+        await seedDatabase();
+
     } catch (e) {
-        console.log('Error initializing DB (likely first run), attempting seed...', e);
-        // If select fails, tables likely don't exist. Drizzle Kit usually handles migration generation,
-        // but for Expo without migrations setup, we might need a raw query or ensure tables created.
-        // For this prototype, we rely on Drizzle's push or manual table creation if needed.
-        // However, with `drizzle-orm` and `expo-sqlite`, we often need to run migrations.
-        // Let's create tables manually for simplicity in this swift prototype phase.
+        console.log('Error initializing DB, attempting recovery...', e);
         await createTables();
         await seedDatabase();
     }
 };
 
 const createTables = async () => {
-    // Manual table creation for "No Migrations" setup (Prototype speedup)
     await expoDb.execAsync(`
       CREATE TABLE IF NOT EXISTS questions (
         id TEXT PRIMARY KEY NOT NULL,
@@ -63,13 +53,15 @@ const createTables = async () => {
 }
 
 const seedDatabase = async () => {
-    const batchSize = 100;
+    const batchSize = 50;
     // @ts-ignore
-    const data = masterData as typeof schema.questions.$inferInsert[];
+    const data = masterData as any[];
+
+    console.log(`Syncing ${data.length} questions from master data...`);
 
     for (let i = 0; i < data.length; i += batchSize) {
         const batch = data.slice(i, i + batchSize).map(item => ({
-            id: item.id,
+            id: String(item.id),
             questionText: item.question_text,
             explanation: item.explanation,
             options: item.options,
@@ -77,11 +69,23 @@ const seedDatabase = async () => {
             group: item.group,
             year: item.year,
             categoryLabel: item.category_label,
-            isFree: item.is_free,
+            isFree: item.is_free ? 1 : 0,
         }));
 
         // @ts-ignore
-        await db.insert(schema.questions).values(batch).onConflictDoNothing();
+        await db.insert(schema.questions).values(batch).onConflictDoUpdate({
+            target: schema.questions.id,
+            set: {
+                questionText: sql`excluded.question_text`,
+                explanation: sql`excluded.explanation`,
+                options: sql`excluded.options`,
+                correctAnswer: sql`excluded.correct_answer`,
+                group: sql`excluded.group_id`,
+                year: sql`excluded.year`,
+                categoryLabel: sql`excluded.category_label`,
+                isFree: sql`excluded.is_free`,
+            }
+        });
     }
-    console.log(`Seeded ${data.length} questions successfully.`);
+    console.log(`Database sync completed.`);
 };

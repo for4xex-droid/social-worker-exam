@@ -2,11 +2,12 @@ import { View, Text, ScrollView, TouchableOpacity, ActivityIndicator } from 'rea
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { useState, useEffect } from 'react';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { ChevronLeft, CheckCircle, XCircle, Type } from 'lucide-react-native';
+import { ChevronLeft, CheckCircle, XCircle, Type, Info, Star } from 'lucide-react-native';
 import clsx from 'clsx';
 import { db } from '../../db/client';
 import { questions, userProgress } from '../../db/schema';
-import { eq, and, gt, asc } from 'drizzle-orm';
+import { eq, and, gt, asc, isNull } from 'drizzle-orm';
+import Constants from 'expo-constants';
 
 interface QuestionData {
     id: string;
@@ -17,6 +18,36 @@ interface QuestionData {
     year: string | null;
 }
 
+/**
+ * A simple component to render text with basic markdown-like support
+ * Supports: **bold**, 【highlight】
+ */
+const RichText = ({ text, className, baseSize }: { text: string; className?: string; baseSize: number }) => {
+    const brandColor = Constants.expoConfig?.extra?.brandColor || '#FF6B00';
+    const parts = text.split(/(\*\*.*?\*\*|【.*?】)/);
+    return (
+        <Text style={{ fontSize: baseSize }} className={clsx("leading-relaxed text-slate-700", className)}>
+            {parts.map((part, i) => {
+                if (part.startsWith('**') && part.endsWith('**')) {
+                    return (
+                        <Text key={i} className="font-extrabold text-slate-900">
+                            {part.slice(2, -2)}
+                        </Text>
+                    );
+                }
+                if (part.startsWith('【') && part.endsWith('】')) {
+                    return (
+                        <Text key={i} className="font-bold" style={{ color: brandColor }}>
+                            {part}
+                        </Text>
+                    );
+                }
+                return <Text key={i}>{part}</Text>;
+            })}
+        </Text>
+    );
+};
+
 export default function QuizPlayer() {
     const { id, mode } = useLocalSearchParams();
     const router = useRouter();
@@ -25,11 +56,12 @@ export default function QuizPlayer() {
     const [loading, setLoading] = useState(true);
     const [selectedIndices, setSelectedIndices] = useState<number[]>([]);
     const [isSubmitted, setIsSubmitted] = useState(false);
-    const [textSize, setTextSize] = useState<'normal' | 'large'>('normal');
+    const [textSizeMode, setTextSizeMode] = useState<number>(1); // 0: Small, 1: Normal, 2: Large, 3: XL
     const [correctCount, setCorrectCount] = useState(0);
     const [questionsAnswered, setQuestionsAnswered] = useState(0);
 
     const isReviewMode = mode === 'review';
+    const brandColor = Constants.expoConfig?.extra?.brandColor || '#FF6B00';
 
     useEffect(() => {
         const loadQuestion = async () => {
@@ -44,12 +76,44 @@ export default function QuizPlayer() {
                 if (result.length > 0) {
                     const q = result[0];
                     // Convert correct answers (strings) to indices
-                    const correctIndices = q.options.reduce<number[]>((acc, opt, idx) => {
-                        if (q.correctAnswer.includes(opt)) {
+                    // Robust answer matching strategy
+                    let correctIndices: number[] = [];
+
+                    // Strategy 1: Exact Match (with simple trim)
+                    const cleanAnswers = q.correctAnswer.map(a => a.trim());
+                    correctIndices = q.options.reduce<number[]>((acc, opt, idx) => {
+                        if (cleanAnswers.includes(opt.trim())) {
                             acc.push(idx);
                         }
                         return acc;
                     }, []);
+
+                    // Strategy 2: Fuzzy Match (ignore punctuation like trailing periods)
+                    if (correctIndices.length === 0) {
+                        correctIndices = q.options.reduce<number[]>((acc, opt, idx) => {
+                            const cleanOpt = opt.trim().replace(/[.,。、]+$/, '');
+                            const isMatch = cleanAnswers.some(ans => {
+                                const cleanAns = ans.trim().replace(/[.,。、]+$/, '');
+                                return cleanAns === cleanOpt || cleanOpt.includes(cleanAns) || cleanAns.includes(cleanOpt);
+                            });
+                            if (isMatch) acc.push(idx);
+                            return acc;
+                        }, []);
+                    }
+
+                    // Strategy 3: Numeric Indices (Backup for raw index data)
+                    if (correctIndices.length === 0) {
+                        const numericAnswers = cleanAnswers.map(a => parseInt(a)).filter(n => !isNaN(n));
+                        if (numericAnswers.length > 0) {
+                            // Assuming 1-based index in data
+                            correctIndices = numericAnswers.map(n => n - 1).filter(i => i >= 0 && i < q.options.length);
+                        }
+                    }
+
+                    // Deduplicate
+                    correctIndices = [...new Set(correctIndices)];
+
+                    console.log(`[QuizDebug] Loaded Q:${q.id}, CorrectIndices:${correctIndices}, RawAnswers:${JSON.stringify(q.correctAnswer)}`);
 
                     setQuestion({
                         id: q.id,
@@ -124,8 +188,6 @@ export default function QuizPlayer() {
             let nextQ;
 
             if (isReviewMode) {
-                // Find next NON-MASTERED question with ID > current ID (across all years or same year? Let's say globally for quest)
-                // Actually simple approach: just any next question that is not mastered.
                 nextQ = await db.select()
                     .from(questions)
                     .where(and(
@@ -135,11 +197,10 @@ export default function QuizPlayer() {
                     .orderBy(asc(questions.id))
                     .limit(1);
             } else {
-                // Default: Next in same year
                 nextQ = await db.select()
                     .from(questions)
                     .where(and(
-                        eq(questions.year, question.year),
+                        question.year ? eq(questions.year, question.year) : isNull(questions.year),
                         gt(questions.id, question.id)
                     ))
                     .orderBy(asc(questions.id))
@@ -148,20 +209,18 @@ export default function QuizPlayer() {
 
             if (nextQ.length > 0) {
                 const nextId = nextQ[0].id;
-                // Preserve mode param
                 if (isReviewMode) {
                     router.replace(`/quiz/${nextId}?mode=review`);
                 } else {
                     router.replace(`/quiz/${nextId}`);
                 }
             } else {
-                // End of session
                 router.replace({
                     pathname: '/quiz/result',
                     params: {
-                        total: questionsAnswered, // Simple session tracking
+                        total: questionsAnswered,
                         correct: correctCount,
-                        year: isReviewMode ? "Weakness Review" : question.year
+                        year: isReviewMode ? "Weakness Review" : (question.year || "Practice")
                     }
                 });
             }
@@ -171,72 +230,118 @@ export default function QuizPlayer() {
         }
     };
 
+    const cycleTextSize = () => {
+        setTextSizeMode(prev => (prev + 1) % 4);
+    };
+
+    // Calculate dynamic font sizes
+    const fontSizes = [
+        { q: 15, opt: 14, exp: 13 }, // 0: Small
+        { q: 18, opt: 16, exp: 15 }, // 1: Normal
+        { q: 22, opt: 20, exp: 18 }, // 2: Large
+        { q: 26, opt: 24, exp: 22 }, // 3: XL
+    ];
+    const currentSizes = fontSizes[textSizeMode];
+
     if (loading) {
         return (
             <SafeAreaView className="flex-1 bg-white items-center justify-center">
-                <ActivityIndicator size="large" color="#2563EB" />
-                <Text className="mt-4 text-gray-500">Loading Question...</Text>
+                <ActivityIndicator size="large" color={brandColor} />
+                <Text className="mt-4 text-slate-400 font-bold uppercase tracking-widest text-[10px]">Loading Master Knowledge</Text>
             </SafeAreaView>
         );
     }
 
     if (!question) {
         return (
-            <SafeAreaView className="flex-1 bg-white items-center justify-center">
-                <Text className="text-gray-500">Question not found.</Text>
-                <TouchableOpacity onPress={() => router.back()} className="mt-4 p-4 bg-primary rounded-xl">
-                    <Text className="text-white font-bold">Go Back</Text>
+            <SafeAreaView className="flex-1 bg-white items-center justify-center px-6">
+                <Text className="text-slate-400 font-bold mb-4">Question not found.</Text>
+                <TouchableOpacity onPress={() => router.back()} className="w-full py-4 bg-slate-900 rounded-2xl items-center">
+                    <Text className="text-white font-black">Go Back</Text>
                 </TouchableOpacity>
             </SafeAreaView>
         );
     }
 
-    // Dynamic styles based on text settings
-    const baseTextSize = textSize === 'large' ? 'text-xl' : 'text-base';
-    const explanationTextSize = textSize === 'large' ? 'text-lg' : 'text-sm';
-
     return (
         <SafeAreaView className="flex-1 bg-white">
             {/* Header */}
-            <View className="flex-row items-center justify-between px-4 py-3 border-b border-gray-100">
-                <TouchableOpacity onPress={() => router.back()} className="p-2">
-                    <ChevronLeft size={24} color="#374151" />
+            <View className="flex-row items-center justify-between px-6 py-4 border-b border-slate-50">
+                <TouchableOpacity onPress={() => router.back()} className="w-10 h-10 items-center justify-center bg-slate-50 rounded-full">
+                    <ChevronLeft size={20} color="#64748b" />
                 </TouchableOpacity>
-                <Text className="font-bold text-gray-800">問題 {id}</Text>
-                <TouchableOpacity onPress={() => setTextSize(prev => prev === 'normal' ? 'large' : 'normal')} className="p-2 bg-gray-100 rounded-full">
-                    <Type size={20} color="#374151" />
+                <View className="items-center">
+                    <Text className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-0.5">Question ID</Text>
+                    <Text className="font-black text-slate-900 border-b-2 pb-0.5 px-1" style={{ borderBottomColor: brandColor }}>{id}</Text>
+                </View>
+                <TouchableOpacity onPress={cycleTextSize} className="w-10 h-10 items-center justify-center bg-slate-50 rounded-full">
+                    <Type size={18} color="#64748b" />
+                    <View className="absolute -top-1 -right-1 w-4 h-4 rounded-full items-center justify-center" style={{ backgroundColor: brandColor }}>
+                        <Text className="text-[8px] text-white font-bold">{textSizeMode + 1}</Text>
+                    </View>
                 </TouchableOpacity>
             </View>
 
-            <ScrollView className="flex-1" contentContainerStyle={{ padding: 24 }}>
+            <ScrollView className="flex-1" showsVerticalScrollIndicator={false} contentContainerStyle={{ padding: 24, paddingBottom: 100 }}>
+
+                {/* Question Info Chip */}
+                <View className="flex-row mb-4">
+                    <View className="bg-slate-100 px-3 py-1 rounded-full flex-row items-center">
+                        <Info size={12} color="#94a3b8" />
+                        <Text className="text-slate-500 text-[10px] font-bold ml-1.5 uppercase">
+                            {isReviewMode ? "Review Mode" : `${question.year || "Practice"} Exam`}
+                        </Text>
+                    </View>
+                </View>
 
                 {/* Question Text */}
-                <View className="mb-8">
-                    <Text className={clsx("font-medium text-gray-900 leading-8", baseTextSize)}>
+                <View className="mb-10">
+                    <Text style={{ fontSize: currentSizes.q }} className="font-bold text-slate-900 leading-[34px]">
                         {question.text}
                     </Text>
                 </View>
 
                 {/* Options List */}
-                <View className="gap-3 mb-8">
+                <View className="gap-4 mb-10">
                     {question.options.map((option, index) => {
-                        let borderColor = "border-gray-200";
+                        const selected = isSelected(index);
+                        const correct = isCorrect(index);
+
+                        let borderColor = "border-slate-100";
                         let bgColor = "bg-white";
+                        let shadowColor = "shadow-slate-200";
+                        let bubbleBg = "bg-slate-100";
+                        let bubbleText = "text-slate-400";
+                        let optionText = "text-slate-600";
                         let icon = null;
 
                         if (isSubmitted) {
-                            if (isCorrect(index)) {
+                            if (correct) {
+                                // Correct answer - Always Green
                                 borderColor = "border-green-500";
                                 bgColor = "bg-green-50";
-                                icon = <CheckCircle size={20} color="#10B981" />;
-                            } else if (isSelected(index) && !isCorrect(index)) {
+                                shadowColor = "shadow-green-100";
+                                bubbleBg = "bg-green-500";
+                                bubbleText = "text-white";
+                                optionText = "text-slate-900";
+                                if (selected) {
+                                    icon = <CheckCircle size={20} color="#10B981" fill="#10B98133" />;
+                                }
+                            } else if (selected && !correct) {
+                                // User selected wrong - Always Red
                                 borderColor = "border-red-500";
                                 bgColor = "bg-red-50";
-                                icon = <XCircle size={20} color="#EF4444" />;
+                                shadowColor = "shadow-red-100";
+                                bubbleBg = "bg-red-500";
+                                bubbleText = "text-white";
+                                optionText = "text-slate-900";
+                                icon = <XCircle size={20} color="#EF4444" fill="#EF444433" />;
                             }
-                        } else if (isSelected(index)) {
-                            borderColor = "border-primary";
-                            bgColor = "bg-blue-50";
+                        } else if (selected) {
+                            // Selected but not submitted - Use Brand Color
+                            bubbleBg = ""; // Handled by inline style
+                            bubbleText = "text-white";
+                            optionText = "text-slate-900";
                         }
 
                         return (
@@ -245,23 +350,31 @@ export default function QuizPlayer() {
                                 activeOpacity={0.8}
                                 onPress={() => toggleSelection(index)}
                                 className={clsx(
-                                    "flex-row items-center p-4 border-2 rounded-xl",
+                                    "flex-row items-center p-5 border-2 rounded-[24px] shadow-sm",
                                     borderColor,
-                                    bgColor
+                                    bgColor,
+                                    shadowColor
                                 )}
+                                style={(!isSubmitted && selected) ? {
+                                    borderColor: brandColor,
+                                    backgroundColor: `${brandColor}08`
+                                } : {}}
                             >
-                                <View className={clsx(
-                                    "w-8 h-8 rounded-full border items-center justify-center mr-3",
-                                    isSelected(index) || (isSubmitted && isCorrect(index)) ? "bg-primary border-primary" : "border-gray-300 bg-white"
-                                )}>
-                                    <Text className={clsx(
-                                        "font-bold",
-                                        isSelected(index) || (isSubmitted && isCorrect(index)) ? "text-white" : "text-gray-500"
-                                    )}>
+                                <View
+                                    className={clsx(
+                                        "w-10 h-10 rounded-2xl items-center justify-center mr-4",
+                                        bubbleBg
+                                    )}
+                                    style={(!isSubmitted && selected) ? { backgroundColor: brandColor } : {}}
+                                >
+                                    <Text className={clsx("font-black text-lg", bubbleText)}>
                                         {index + 1}
                                     </Text>
                                 </View>
-                                <Text className={clsx("flex-1 text-gray-800 font-medium", textSize === 'large' ? 'text-lg' : 'text-sm')}>
+                                <Text
+                                    style={{ fontSize: currentSizes.opt }}
+                                    className={clsx("flex-1 font-bold", optionText)}
+                                >
                                     {option}
                                 </Text>
                                 {icon && <View className="ml-2">{icon}</View>}
@@ -272,42 +385,92 @@ export default function QuizPlayer() {
 
                 {/* Explanation Area (Visible after submit) */}
                 {isSubmitted && (
-                    <View className="bg-slate-50 p-6 rounded-2xl mb-8 border border-slate-100">
-                        <View className="flex-row items-center gap-2 mb-3">
-                            <View className="h-6 w-1 bg-primary rounded-full" />
-                            <Text className="font-bold text-slate-800">AI解説</Text>
+                    <View className="bg-slate-50 p-8 rounded-[32px] mb-10 border border-slate-100 border-dashed">
+                        <View className="flex-row items-center gap-2 mb-6">
+                            <View className="w-8 h-8 bg-white rounded-full items-center justify-center shadow-sm">
+                                <Star size={16} color={brandColor} fill={brandColor} />
+                            </View>
+                            <View>
+                                <Text className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Master Analysis</Text>
+                                <Text className="font-black text-slate-900 text-lg">AI解説リサーチ</Text>
+                            </View>
                         </View>
-                        <Text className={clsx("text-slate-600 leading-7", explanationTextSize)}>
-                            {question.explanation}
-                        </Text>
+
+                        <RichText
+                            text={question.explanation}
+                            baseSize={currentSizes.exp}
+                            className="text-slate-600"
+                        />
+
+                        <View className="mt-8 pt-8 border-t border-slate-200/50 flex-row items-center justify-between">
+                            <Text className="text-[10px] font-bold text-slate-400 uppercase">Correct Answer Index</Text>
+                            <View className="px-3 py-1 rounded-lg" style={{ backgroundColor: brandColor }}>
+                                <Text className="text-white font-black text-xs">
+                                    Option {question.correct_answers.map(i => i + 1).join(', ')}
+                                </Text>
+                            </View>
+                        </View>
                     </View>
                 )}
 
             </ScrollView>
 
             {/* Footer Action Button */}
-            <View className="p-4 border-t border-gray-100 bg-white shadow-[0_-4px_6px_-1px_rgba(0,0,0,0.05)]">
+            <View className="absolute bottom-0 left-0 right-0 p-6 bg-white/80 backdrop-blur-xl border-t border-slate-100">
                 {!isSubmitted ? (
                     <TouchableOpacity
                         onPress={submitAnswer}
-                        disabled={selectedIndices.length === 0}
-                        className={clsx(
-                            "w-full py-4 rounded-xl items-center shadow-sm",
-                            selectedIndices.length > 0 ? "bg-primary" : "bg-gray-300"
-                        )}
+                        disabled={selectedIndices.length !== question.correct_answers.length}
+                        activeOpacity={0.9}
+                        style={{ borderRadius: 24, overflow: 'hidden' }}
                     >
-                        <Text className="text-white font-bold text-lg tracking-wider">回答する</Text>
+                        <View
+                            className={clsx(
+                                "w-full py-5 items-center justify-center flex-row gap-3",
+                                selectedIndices.length !== question.correct_answers.length ? "bg-slate-200" : ""
+                            )}
+                            style={selectedIndices.length === question.correct_answers.length ? { backgroundColor: brandColor } : {}}
+                        >
+                            <View className="flex-col items-center">
+                                <Text className="text-white font-black text-lg tracking-wider">
+                                    {question.correct_answers.length > 1
+                                        ? (selectedIndices.length === question.correct_answers.length ? "回答を確定する" : `${question.correct_answers.length}つ選んでください`)
+                                        : "回答を確定する"}
+                                </Text>
+                                {selectedIndices.length !== question.correct_answers.length && (
+                                    <View className="flex-row items-center gap-1">
+                                        <Info size={8} color="#94a3b8" />
+                                        <Text className="text-slate-400 text-[8px] font-bold uppercase tracking-[1px]">
+                                            Selection: {selectedIndices.length} / {question.correct_answers.length}
+                                        </Text>
+                                    </View>
+                                )}
+                            </View>
+                            {selectedIndices.length === question.correct_answers.length && <ArrowRight size={20} color="white" strokeWidth={3} />}
+                        </View>
                     </TouchableOpacity>
                 ) : (
                     <TouchableOpacity
                         onPress={handleNextQuestion}
-                        className="w-full bg-slate-800 py-4 rounded-xl items-center shadow-md"
+                        activeOpacity={0.9}
+                        style={{ borderRadius: 24, overflow: 'hidden' }}
                     >
-                        <Text className="text-white font-bold text-lg tracking-wider">次の問題へ</Text>
-                        <Text className="text-slate-400 text-xs mt-1">Next Question</Text>
+                        <View className="w-full bg-slate-900 py-5 items-center justify-center flex-row gap-3">
+                            <View className="flex-col items-center">
+                                <Text className="text-white font-black text-lg tracking-wider">次の問題へ進む</Text>
+                                <Text className="text-slate-400 text-[9px] font-bold uppercase tracking-[2px]">Next Challenge</Text>
+                            </View>
+                            <ArrowRight size={20} color="white" strokeWidth={3} />
+                        </View>
                     </TouchableOpacity>
                 )}
             </View>
         </SafeAreaView>
     );
 }
+
+const ArrowRight = ({ size, color, strokeWidth }: { size: number, color: string, strokeWidth?: number }) => (
+    <View>
+        <ChevronLeft size={size} color={color} style={{ transform: [{ rotate: '180deg' }] }} strokeWidth={strokeWidth} />
+    </View>
+);

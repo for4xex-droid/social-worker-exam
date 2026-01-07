@@ -3,7 +3,9 @@
   "compilerOptions": {
     "strict": true,
     "jsx": "react-jsx",
-    "jsxImportSource": "nativewind"
+    "jsxImportSource": "nativewind",
+    "esModuleInterop": true,
+    "resolveJsonModule": true
   },
   "include": [
     "**/*.ts",
