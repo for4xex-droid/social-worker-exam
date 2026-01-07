@@ -296,6 +296,127 @@ fn export_questions() -> Result<String, String> {
 }
 
 #[tauri::command]
+async fn audit_and_polish_questions(app: tauri::AppHandle) -> Result<usize, String> {
+    use chrono::Local;
+    use std::fs::{self, OpenOptions};
+    use std::io::Write;
+    use tauri::Emitter;
+
+    let questions = db::get_all_questions_admin().map_err(|e| e.to_string())?;
+    let total = questions.len();
+    if total == 0 {
+        return Ok(0);
+    }
+
+    // Setup Log File
+    let log_dir = "audit_logs";
+    if let Err(e) = fs::create_dir_all(log_dir) {
+        println!("Failed to create log dir: {}", e);
+    }
+    let timestamp = Local::now().format("%Y%m%d_%H%M%S").to_string();
+    let log_file_path = format!("{}/audit_log_{}.csv", log_dir, timestamp);
+
+    // Create file and write header with BOM for Excel
+    let mut file = OpenOptions::new()
+        .create(true)
+        .append(true)
+        .open(&log_file_path)
+        .map_err(|e| format!("Failed to create log file: {}", e))?;
+    let _ = file.write_all(b"\xEF\xBB\xBF");
+    let _ = writeln!(file, "QuestionID,Field,Original,Corrected");
+
+    let batch_size = 10;
+    let mut processed_count = 0;
+    let mut changed_count = 0;
+
+    for chunk in questions.chunks(batch_size) {
+        let chunk_vec = chunk.to_vec();
+        app.emit(
+            "audit-status",
+            format!(
+                "Auditing {}/{} questions...",
+                processed_count + chunk_vec.len(),
+                total
+            ),
+        )
+        .unwrap_or_default();
+
+        match gemini::audit_questions(chunk_vec.clone()).await {
+            Ok(corrected_list) => {
+                for q_new in corrected_list {
+                    if let Some(id) = q_new.id {
+                        // Find original question to compare
+                        if let Some(q_old) = chunk_vec.iter().find(|q| q.id == Some(id)) {
+                            let mut changes = Vec::new();
+
+                            if q_old.question_text != q_new.question_text {
+                                changes.push((
+                                    "QuestionText",
+                                    &q_old.question_text,
+                                    &q_new.question_text,
+                                ));
+                            }
+                            if q_old.explanation != q_new.explanation {
+                                changes.push((
+                                    "Explanation",
+                                    &q_old.explanation,
+                                    &q_new.explanation,
+                                ));
+                            }
+                            // Options and Answer comparison (simple string representation check)
+                            let old_opts_json =
+                                serde_json::to_string(&q_old.options).unwrap_or_default();
+                            let new_opts_json =
+                                serde_json::to_string(&q_new.options).unwrap_or_default();
+                            if old_opts_json != new_opts_json {
+                                changes.push(("Options", &old_opts_json, &new_opts_json));
+                            }
+
+                            let old_ans_json =
+                                serde_json::to_string(&q_old.correct_answer).unwrap_or_default();
+                            let new_ans_json =
+                                serde_json::to_string(&q_new.correct_answer).unwrap_or_default();
+                            if old_ans_json != new_ans_json {
+                                changes.push(("CorrectAnswer", &old_ans_json, &new_ans_json));
+                            }
+
+                            if !changes.is_empty() {
+                                // Write to log
+                                for (field, old, new) in changes {
+                                    let old_escaped = format!("\"{}\"", old.replace("\"", "\"\""));
+                                    let new_escaped = format!("\"{}\"", new.replace("\"", "\"\""));
+                                    let _ = writeln!(
+                                        file,
+                                        "{},{},{},{}",
+                                        id, field, old_escaped, new_escaped
+                                    );
+                                }
+
+                                // Update DB
+                                let _ = db::update_question(
+                                    id,
+                                    q_new.question_text,
+                                    q_new.options,
+                                    q_new.correct_answer,
+                                    q_new.explanation,
+                                );
+                                changed_count += 1;
+                            }
+                        }
+                    }
+                }
+                processed_count += chunk.len();
+            }
+            Err(e) => {
+                println!("Audit chunk failed: {}", e);
+            }
+        }
+    }
+
+    Ok(changed_count)
+}
+
+#[tauri::command]
 fn import_questions(json_data: String) -> Result<usize, String> {
     db::import_questions_from_json(json_data).map_err(|e| e.to_string())
 }
@@ -373,7 +494,6 @@ pub fn run() {
             split_pdf_and_import,
             cleanup_duplicates,
             get_wrong_questions,
-            get_stats,
             get_users,
             create_user,
             get_study_history,
@@ -382,7 +502,8 @@ pub fn run() {
             export_questions,
             import_questions,
             save_session,
-            get_session_last_id
+            get_session_last_id,
+            audit_and_polish_questions
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");

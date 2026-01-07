@@ -229,19 +229,26 @@ where P: rusqlite::Params
             .and_then(|s| DateTime::parse_from_rfc3339(&s).ok())
             .map(|dt| dt.with_timezone(&Utc));
 
+        let correct_answer_raw: String = row.get(3)?;
+        let correct_answer: Vec<String> = if correct_answer_raw.starts_with('[') {
+            serde_json::from_str(&correct_answer_raw).unwrap_or_else(|_| vec![correct_answer_raw])
+        } else {
+            vec![correct_answer_raw]
+        };
+
         Ok(Question {
-            id: row.get(0)?,
+            id: Some(row.get(0)?),
             question_text: row.get(1)?,
             options,
-            correct_answer: row.get(3)?,
+            correct_answer,
             explanation: row.get(4)?,
             source_file: row.get(5)?,
             status: row.get(6)?,
             next_review_at,
             correct_streak: row.get(8)?,
             last_reviewed_at,
-            category: row.get(10).unwrap_or(None),
-            exam_year: row.get(11).unwrap_or(None),
+            category: row.get(10).ok().flatten(),
+            exam_year: row.get(11).ok().flatten(),
         })
     })?;
 
@@ -424,6 +431,7 @@ pub fn insert_questions(questions: Vec<Question>) -> Result<usize> {
     let mut count = 0;
     for q in questions {
         let opts_json = serde_json::to_string(&q.options).unwrap_or("[]".to_string());
+        let ans_json = serde_json::to_string(&q.correct_answer).unwrap_or("[]".to_string());
         
         // INSERT OR IGNORE を使用して、既に同じ question_text がある場合はスキップする
         let _ = tx.execute(
@@ -432,7 +440,7 @@ pub fn insert_questions(questions: Vec<Question>) -> Result<usize> {
             params![
                 q.question_text, 
                 opts_json, 
-                q.correct_answer, 
+                ans_json, 
                 q.explanation, 
                 q.source_file, 
                 q.category,
@@ -446,6 +454,53 @@ pub fn insert_questions(questions: Vec<Question>) -> Result<usize> {
     
     tx.commit()?;
     Ok(count)
+}
+
+pub fn update_question(id: i64, question_text: String, options: Vec<String>, correct_answer: Vec<String>, explanation: String) -> Result<()> {
+    let conn = Connection::open(DB_PATH)?;
+    let opts_json = serde_json::to_string(&options).unwrap_or("[]".to_string());
+    let ans_json = serde_json::to_string(&correct_answer).unwrap_or("[]".to_string());
+    
+    conn.execute(
+        "UPDATE questions SET question_text = ?1, options = ?2, correct_answer = ?3, explanation = ?4 WHERE id = ?5",
+        params![question_text, opts_json, ans_json, explanation, id],
+    )?;
+    Ok(())
+}
+
+pub fn get_all_questions_admin() -> Result<Vec<Question>> {
+    let conn = Connection::open(DB_PATH)?;
+    let mut stmt = conn.prepare(
+        "SELECT id, question_text, options, correct_answer, explanation, source_file, category, exam_year FROM questions"
+    )?;
+    let q_iter = stmt.query_map([], |row| {
+        let options_json: String = row.get(2)?;
+        let options: Vec<String> = serde_json::from_str(&options_json).unwrap_or_default();
+        let correct_answer_raw: String = row.get(3)?;
+        let correct_answer: Vec<String> = if correct_answer_raw.starts_with('[') {
+            serde_json::from_str(&correct_answer_raw).unwrap_or_else(|_| vec![correct_answer_raw])
+        } else {
+            vec![correct_answer_raw]
+        };
+
+        Ok(Question {
+            id: Some(row.get(0)?),
+            question_text: row.get(1)?,
+            options,
+            correct_answer,
+            explanation: row.get(4).unwrap_or_default(),
+            source_file: row.get::<_, Option<String>>(5).ok().flatten().unwrap_or_default(),
+            category: row.get(6).ok().flatten(),
+            exam_year: row.get(7).ok().flatten(),
+            status: "new".to_string(),
+            next_review_at: None,
+            correct_streak: 0,
+            last_reviewed_at: None,
+        })
+    })?;
+    let mut vec = Vec::new();
+    for q in q_iter { vec.push(q?); }
+    Ok(vec)
 }
 
 pub fn cleanup_similar_questions() -> Result<usize> {
@@ -504,11 +559,18 @@ fn get_all_questions_simple() -> Result<Vec<Question>> {
     let q_iter = stmt.query_map([], |row| {
         let options_json: String = row.get(2)?;
         let options: Vec<String> = serde_json::from_str(&options_json).unwrap_or_default();
+        let correct_answer_raw: String = row.get(3)?;
+        let correct_answer: Vec<String> = if correct_answer_raw.starts_with('[') {
+            serde_json::from_str(&correct_answer_raw).unwrap_or_else(|_| vec![correct_answer_raw])
+        } else {
+            vec![correct_answer_raw]
+        };
+
         Ok(Question {
             id: row.get(0)?,
             question_text: row.get(1)?,
             options,
-            correct_answer: row.get(3)?,
+            correct_answer,
             explanation: row.get(4)?,
             source_file: row.get(5)?,
             category: row.get(6)?,
@@ -556,10 +618,11 @@ pub fn seed_dummy_data() -> Result<()> {
 
     for (q, opts, ans, exp) in dummy_questions {
         let opts_json = serde_json::to_string(&opts).unwrap();
+        let ans_json = serde_json::to_string(&vec![ans.to_string()]).unwrap();
         conn.execute(
             "INSERT INTO questions (question_text, options, correct_answer, explanation, source_file, status, next_review_at, correct_streak, category, exam_year)
              VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8, '社会福祉士', 'dummy')",
-            params![q, opts_json, ans, exp, "dummy_data", "new", Utc::now().to_rfc3339(), 0]
+            params![q, opts_json, ans_json, exp, "dummy_data", "new", Utc::now().to_rfc3339(), 0]
         )?;
     }
 

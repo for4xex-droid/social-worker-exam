@@ -14,7 +14,7 @@ interface Question {
   id: number;
   question_text: string;
   options: string[];
-  correct_answer: string;
+  correct_answer: string[];
   explanation: string;
   source_file: string;
   category: string | null;
@@ -51,6 +51,8 @@ interface ImporterProps {
   setImportStatus: (s: string) => void;
   processQueue: (cat: string, year: string) => Promise<void>;
   updateCountsOnly: () => Promise<void>;
+  auditStatus: string;
+  setAuditStatus: (s: string) => void;
 }
 
 // --- Components ---
@@ -64,7 +66,9 @@ const Importer = ({
   setBulkQueue,
   setImportStatus,
   processQueue,
-  updateCountsOnly
+  updateCountsOnly,
+  auditStatus,
+  setAuditStatus
 }: ImporterProps) => {
   const [path, setPath] = useState("");
   const [folderPath, setFolderPath] = useState("");
@@ -183,6 +187,42 @@ const Importer = ({
             }}>Load Shared Pack</Button>
           </div>
         </div>
+
+        {auditStatus && (
+          <div className="mt-4 p-4 bg-primary/5 border border-primary/20 rounded-xl text-center">
+            <p className="text-[10px] font-black text-primary uppercase animate-pulse mb-2">{auditStatus}</p>
+            <div className="w-full bg-zinc-200 dark:bg-zinc-800 h-1 rounded-full overflow-hidden">
+              <div className="bg-primary h-full animate-progress-indeterminate" style={{ width: '100%', animationDuration: '2s' }}></div>
+            </div>
+          </div>
+        )}
+
+        <div className="mt-6 pt-4 border-t flex flex-wrap gap-4 items-center justify-between">
+          <div className="flex flex-col gap-1">
+            <h5 className="text-[9px] font-black uppercase opacity-40">Administrative Master Polish</h5>
+            <Button
+              variant="outline"
+              size="sm"
+              className="text-[9px] h-8 bg-black text-white hover:bg-zinc-800 border-none font-bold tracking-tighter"
+              disabled={!!auditStatus}
+              onClick={async () => {
+                if (!confirm("データベース内の全問題をAI（Gemini）が精査し、解説のブラッシュアップや不備の修正を行います。これには時間がかかり、APIコストが発生する場合があります。開始しますか？")) return;
+                setAuditStatus("Preparing audit...");
+                try {
+                  const count = await invoke<number>("audit_and_polish_questions");
+                  alert(`AI Audit Complete. Polished ${count} questions.`);
+                  setAuditStatus("");
+                  updateCountsOnly();
+                } catch (e) {
+                  alert(e);
+                  setAuditStatus("");
+                }
+              }}
+            >
+              ✨ RUN AI AUDIT & POLISH DATABASE
+            </Button>
+          </div>
+        </div>
       </div>
     </div>
   );
@@ -195,7 +235,7 @@ function App() {
   const [currentIndex, setCurrentIndex] = useState(0);
   const [loading, setLoading] = useState(false);
   const [isAnswered, setIsAnswered] = useState(false);
-  const [selectedOption, setSelectedOption] = useState<string | null>(null);
+  const [selectedOptions, setSelectedOptions] = useState<string[]>([]);
 
   // Import Status
   const [importStatus, setImportStatus] = useState<string>("");
@@ -222,6 +262,7 @@ function App() {
   // Cloud Sync States
   const [isSyncing, setIsSyncing] = useState(false);
   const [syncUrl, setSyncUrl] = useState(""); // URL placeholder for future cloud providers
+  const [auditStatus, setAuditStatus] = useState("");
 
   // Accordion control
   const [isImporterOpen, setIsImporterOpen] = useState(false);
@@ -300,7 +341,7 @@ function App() {
       }
 
       setIsAnswered(false);
-      setSelectedOption(null);
+      setSelectedOptions([]);
     } catch (error) {
       console.error(error);
     } finally {
@@ -309,8 +350,9 @@ function App() {
   }, [reviewMode, currentUser]);
 
   const updateCountsOnly = async () => {
+    if (!currentUser) return;
     try {
-      const all: Question[] = await invoke("get_all_questions");
+      const all: Question[] = await invoke("get_all_questions", { userId: currentUser.id });
       setTotalCount(all.length);
     } catch (e) { console.error(e); }
   };
@@ -369,7 +411,19 @@ function App() {
       });
     }
     setupListener();
-    return () => { if (unlisten) unlisten(); };
+
+    let unlistenAudit: UnlistenFn;
+    async function setupAuditListener() {
+      unlistenAudit = await listen<string>('audit-status', (event) => {
+        setAuditStatus(event.payload);
+      });
+    }
+    setupAuditListener();
+
+    return () => {
+      if (unlisten) unlisten();
+      if (unlistenAudit) unlistenAudit();
+    };
   }, [reviewMode, viewMode, fetchQuestions]);
 
   // Timer for import
@@ -391,25 +445,47 @@ function App() {
       if (key >= 1 && key <= 5) {
         const optionIndex = key - 1;
         const currentQuestion = questions[currentIndex];
-        if (currentQuestion && optionIndex < currentQuestion.options.length) handleAnswer(currentQuestion.options[optionIndex]);
+        if (currentQuestion && optionIndex < currentQuestion.options.length) {
+          if (currentQuestion.correct_answer.length === 1) {
+            handleOptionClick(currentQuestion.options[optionIndex]);
+          } else {
+            // Multiple choice keyboard support is complex, skip for now or implement toggle
+            handleOptionClick(currentQuestion.options[optionIndex]);
+          }
+        }
       }
     };
     window.addEventListener("keydown", handleKeyDown);
     return () => window.removeEventListener("keydown", handleKeyDown);
   }, [loading, questions, currentIndex, isAnswered]);
 
-  async function handleAnswer(option: string) {
-    if (questions.length === 0) return;
+  async function handleOptionClick(option: string) {
+    if (isAnswered) return;
     const currentQuestion = questions[currentIndex];
-    setSelectedOption(option);
+    const isMultiple = currentQuestion.correct_answer.length > 1;
+
+    if (isMultiple) {
+      setSelectedOptions(prev =>
+        prev.includes(option) ? prev.filter(o => o !== option) : [...prev, option]
+      );
+    } else {
+      submitAnswer([option]);
+    }
+  }
+
+  async function submitAnswer(finalOptions: string[]) {
+    if (questions.length === 0 || finalOptions.length === 0) return;
+    const currentQuestion = questions[currentIndex];
+    setSelectedOptions(finalOptions);
     setIsAnswered(true);
 
-    const correct = option === currentQuestion.correct_answer;
+    const isCorrect = finalOptions.length === currentQuestion.correct_answer.length &&
+      finalOptions.every(o => currentQuestion.correct_answer.includes(o));
 
     // Update local state to reflect change immediately
     const updatedQuestions = [...questions];
     const q = updatedQuestions[currentIndex];
-    if (correct) {
+    if (isCorrect) {
       q.correct_streak = (q.correct_streak || 0) + 1;
       if (q.correct_streak >= 5) q.status = 'mastered';
       else q.status = 'learning';
@@ -420,7 +496,7 @@ function App() {
     setQuestions(updatedQuestions);
 
     try {
-      await invoke("submit_answer", { id: currentQuestion.id, userId: currentUser?.id || 1, isCorrect: correct });
+      await invoke("submit_answer", { id: currentQuestion.id, userId: currentUser?.id || 1, isCorrect: isCorrect });
       // Update dashboard stats in background
       fetchStats();
     } catch (error) {
@@ -432,7 +508,7 @@ function App() {
     if (currentIndex < questions.length - 1) {
       setCurrentIndex(prev => prev + 1);
       setIsAnswered(false);
-      setSelectedOption(null);
+      setSelectedOptions([]);
     } else {
       fetchQuestions();
     }
@@ -473,7 +549,9 @@ function App() {
     setBulkQueue,
     setImportStatus,
     processQueue,
-    updateCountsOnly
+    updateCountsOnly,
+    auditStatus,
+    setAuditStatus
   };
 
   if (viewMode === 'dashboard') {
@@ -754,7 +832,11 @@ function App() {
           {/* インポーター（手動で閉じるまで表示され続ける） */}
           <div className={`transition-all duration-500 overflow-hidden ${isImporterOpen ? 'opacity-100 mb-12' : 'max-h-0 opacity-0 pointer-events-none'}`}>
             <div className="relative">
-              <Importer {...importerProps} />
+              <Importer
+                {...importerProps}
+                auditStatus={auditStatus}
+                setAuditStatus={setAuditStatus}
+              />
               <Button variant="ghost" size="sm" className="absolute top-2 right-2 text-[8px] font-bold uppercase opacity-30 hover:opacity-100"
                 onClick={() => setIsImporterOpen(false)}>Close Panel</Button>
             </div>
@@ -801,19 +883,35 @@ function App() {
                 <CardContent className="p-10 pt-0 space-y-3">
                   {questions[currentIndex].options.map((opt, i) => {
                     let style = "border-zinc-100 dark:border-zinc-800 hover:border-primary";
+                    const isSelected = selectedOptions.includes(opt);
+
                     if (isAnswered) {
-                      if (opt === questions[currentIndex].correct_answer) style = "bg-green-600 border-none text-white font-bold";
-                      else if (opt === selectedOption) style = "bg-red-500 border-none text-white opacity-80";
+                      const isCorrectAnswer = questions[currentIndex].correct_answer.includes(opt);
+                      if (isCorrectAnswer) style = "bg-green-600 border-none text-white font-bold";
+                      else if (isSelected) style = "bg-red-500 border-none text-white opacity-80";
                       else style = "opacity-20 pointer-events-none";
+                    } else if (isSelected) {
+                      style = "border-primary bg-primary/10 shadow-inner scale-[0.98]";
                     }
+
                     return (
                       <Button key={i} variant="outline" className={`w-full justify-start text-left h-auto py-5 px-6 rounded-xl border-2 transition-all whitespace-normal break-words flex items-start gap-4 ${style}`}
-                        onClick={() => !isAnswered && handleAnswer(opt)} disabled={isAnswered}>
+                        onClick={() => handleOptionClick(opt)} disabled={isAnswered}>
                         <span className="shrink-0 text-[10px] font-black opacity-30 mt-1">{String.fromCharCode(65 + i)}</span>
                         <span className="text-sm md:text-base font-medium leading-relaxed">{opt}</span>
                       </Button>
                     )
                   })}
+
+                  {!isAnswered && questions[currentIndex].correct_answer.length > 1 && (
+                    <Button
+                      className="w-full h-14 font-black rounded-xl text-lg mt-6 bg-primary text-white shadow-xl active:scale-95 transition-all"
+                      disabled={selectedOptions.length === 0}
+                      onClick={() => submitAnswer(selectedOptions)}
+                    >
+                      SUBMIT {selectedOptions.length} ANSWERS
+                    </Button>
+                  )}
                 </CardContent>
                 {isAnswered && (
                   <CardFooter className="p-10 bg-zinc-50 dark:bg-zinc-800/20 border-t flex flex-col gap-6">
