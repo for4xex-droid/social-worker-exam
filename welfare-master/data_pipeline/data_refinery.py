@@ -2,9 +2,9 @@ import json
 import time
 import os
 import random
-import google.generativeai as genai
 from tqdm import tqdm
 from dotenv import load_dotenv
+from openai import OpenAI
 
 # .envファイルの読み込み
 load_dotenv()
@@ -13,24 +13,16 @@ load_dotenv()
 # 設定エリア
 # ==========================================
 
-# Gemini APIキーのリスト取得 (カンマ区切りで複数対応)
-# 例: GEMINI_API_KEYS="key1,key2,key3"
-env_keys = os.environ.get("GEMINI_API_KEYS")
-if env_keys:
-    API_KEYS = [k.strip() for k in env_keys.split(",") if k.strip()]
-else:
-    # フォールバック: 単一キー
-    single_key = os.environ.get("GEMINI_API_KEY")
-    API_KEYS = [single_key] if single_key else []
+OPENAI_API_KEY = os.environ.get("OPENAI_API_KEY")
 
-if not API_KEYS:
-    print("Error: GEMINI_API_KEYS (or GEMINI_API_KEY) environment variable is not set.")
+if not OPENAI_API_KEY:
+    print("Error: OPENAI_API_KEY environment variable is not set.")
     exit(1)
 
-print(f"Loaded {len(API_KEYS)} API Key(s).")
+client = OpenAI(api_key=OPENAI_API_KEY)
 
 # 入力ファイル名
-INPUT_FILE = "raw_questions.json"
+INPUT_FILE = "raw_kaigo_questions_clean.json"
 
 # 出力ファイル名
 OUTPUT_FILE = "master_database.json"
@@ -42,54 +34,32 @@ CATEGORY_MAPPING = {
     "専門（精神）": "spec_mental",
     "過去問（社会）": "past_social",
     "過去問（精神）": "past_mental",
+    "過去問（介護）": "past_kaigo",
 }
 
 # ==========================================
 # システム初期化
 # ==========================================
 
-# 現在のキーインデックス
-current_key_index = 0
-
-
-def get_current_api_key():
-    return API_KEYS[current_key_index]
-
-
-def rotate_api_key():
-    global current_key_index
-    if len(API_KEYS) > 1:
-        current_key_index = (current_key_index + 1) % len(API_KEYS)
-        print(f"\n[System] Switching to API Key #{current_key_index + 1}")
-    else:
-        print("\n[System] Single API Key in use. Waiting longer instead of switching.")
-        time.sleep(10)  # 予備キーがない場合は待機
-
-
-def configure_genai():
-    genai.configure(api_key=get_current_api_key())
-
-
-configure_genai()
-# コストと速度のバランスが良い Flash モデルを指定
-model = genai.GenerativeModel("gemini-2.0-flash-exp")
+print(f"Loaded OpenAI API Key.")
 
 
 def generate_cleaned_data(question_data, group_id):
     """
-    カテゴリ(group_id)に応じて、最適なプロンプトでGeminiを呼び出す
+    カテゴリ(group_id)に応じて、最適なプロンプトでOpenAI (GPT-4o-mini) を呼び出す
     """
-    global model
 
-    # -------------------------------------------------------
-    # パターンA: 過去問の場合 (past_social, past_mental)
-    # 戦略: 問題文は維持(精度優先)、解説はフルリライト(権利回避 & 初心者向け)
-    # -------------------------------------------------------
+    # プロンプト作成
     if "past" in group_id:
-        prompt = f"""
-        あなたは社会福祉士・精神保健福祉士国家試験の「解説作成のプロ」です。
-        以下の「過去問データ」をもとに、アプリ掲載用のデータを作成してください。
-
+        exam_type = (
+            "介護福祉士" if "kaigo" in group_id else "社会福祉士・精神保健福祉士"
+        )
+        system_prompt = f"""
+        あなたは{exam_type}国家試験の「解説作成のプロ」です。
+        入力される「過去問データ」をもとに、アプリ掲載用の構造化データを作成してください。
+        解説は学習者が理解しやすいように、あなたの言葉で丁寧に書き直してください。
+        """
+        user_prompt = f"""
         【入力データ】
         元の問題: {question_data.get("question", "")}
         元の解説: {question_data.get("explanation", "")}
@@ -113,16 +83,12 @@ def generate_cleaned_data(question_data, group_id):
             "correct_answer": ["正解選択肢"] (配列形式で)
         }}
         """
-
-    # -------------------------------------------------------
-    # パターンB: 予想問題の場合 (common, spec_social, spec_mental)
-    # 戦略: 全てをリライト・事例化して「オリジナル問題」に変換する
-    # -------------------------------------------------------
     else:
-        prompt = f"""
+        system_prompt = """
         あなたは国家試験の「作問委員」です。
-        以下のテキストデータ（市販テキスト等の内容）をベースに、**著作権を侵害しないオリジナルの予想問題**を作成してください。
-
+        入力されるテキストデータ（市販テキスト等の内容）をベースに、**著作権を侵害しないオリジナルの予想問題**を作成してください。
+        """
+        user_prompt = f"""
         【入力データ】
         元テキスト/問題: {question_data.get("question", "")}
         元の解説/知識: {question_data.get("explanation", "")}
@@ -143,42 +109,32 @@ def generate_cleaned_data(question_data, group_id):
         }}
         """
 
-    # API呼び出し (Retry Logic with Rotation)
-    max_retries = 5
+    max_retries = 3
     base_wait = 2
 
     for attempt in range(max_retries):
         try:
-            # 常に最新の設定で実行
-            configure_genai()
-
-            response = model.generate_content(
-                prompt, generation_config={"response_mime_type": "application/json"}
+            response = client.chat.completions.create(
+                model="gpt-4o-mini",
+                messages=[
+                    {"role": "system", "content": system_prompt},
+                    {"role": "user", "content": user_prompt},
+                ],
+                response_format={"type": "json_object"},
+                temperature=0.7,
             )
-            result = json.loads(response.text)
 
-            # Geminiがリストで返してくる場合への安全対策
-            if isinstance(result, list):
-                if len(result) > 0:
-                    result = result[0]
-                else:
-                    raise ValueError("Empty list returned from Gemini")
-
-            if not isinstance(result, dict):
-                raise ValueError(f"Unexpected response type: {type(result)}")
+            content = response.choices[0].message.content
+            result = json.loads(content)
 
             # 共通フィールドの付与
             result["id"] = str(
-                question_data.get("id", hash(result["question_text"]))
-            )  # ID維持または生成
+                question_data.get("id", hash(result.get("question_text", "")))
+            )
             result["group"] = group_id
-            result["year"] = question_data.get("raw_year", None)  # 年度がなければnull
-            result["category_label"] = question_data.get(
-                "raw_category", "一般"
-            )  # 元の細かい科目名
+            result["year"] = question_data.get("raw_year", None)
+            result["category_label"] = question_data.get("raw_category", "一般")
 
-            # is_free フラグの設定ロジック
-            # yearがリストや文字列など様々な型で返る可能性があるため安全に処理
             raw_year = result.get("year")
             if isinstance(raw_year, list):
                 years_str = "".join(str(y) for y in raw_year)
@@ -196,21 +152,16 @@ def generate_cleaned_data(question_data, group_id):
 
         except Exception as e:
             error_msg = str(e)
-            print(
-                f"\n[Warning] Attempt {attempt + 1}/{max_retries} failed: {error_msg}"
-            )
+            print(f"\n[Warning] Attempt {attempt + 1} failed: {error_msg}")
 
-            # 429 Error (Resource Exhausted) -> Rotate Key
-            if "429" in error_msg or "Resource has been exhausted" in error_msg:
-                rotate_api_key()
+            wait_time = min(base_wait * (2**attempt), 30)
+            time.sleep(wait_time)
+            continue
 
-            if attempt < max_retries - 1:
-                wait_time = base_wait * (2**attempt) + random.uniform(0, 1)
-                time.sleep(wait_time)
-                continue
-
-            print(f"\n[Error] ID: {question_data.get('id')} Failed after retries.")
-            return None
+    print(
+        f"\n[Error] ID: {question_data.get('id')} Failed after {max_retries} attempts."
+    )
+    return None
 
 
 # ==========================================
@@ -228,9 +179,10 @@ def main():
         raw_data = json.load(f)
 
     print(f"読み込み完了: 全 {len(raw_data)} 問")
-    print("データ精錬プロセスを開始します...\n")
+    print("データ精錬プロセスを開始します... (Engine: OpenAI GPT-4o-mini)\n")
 
     processed_data = []
+    processed_ids = set()
 
     # 途中再開用のロジック
     if os.path.exists(OUTPUT_FILE):
@@ -243,8 +195,6 @@ def main():
         except Exception as e:
             print(f"[Warning] Failed to load existing data: {e}. Starting fresh.")
             processed_ids = set()
-    else:
-        processed_ids = set()
 
     # プログレスバー付きでループ処理
     for item in tqdm(raw_data, desc="Processing"):
@@ -254,23 +204,22 @@ def main():
 
         # カテゴリの判定
         raw_category = item.get("category_group")
-
-        # マッピング（辞書にないカテゴリは 'common' 扱い）
         group_id = CATEGORY_MAPPING.get(raw_category, "common")
 
-        # Geminiによる生成
+        # OpenAIによる生成
         cleaned_item = generate_cleaned_data(item, group_id)
 
         if cleaned_item:
             processed_data.append(cleaned_item)
-            processed_ids.add(str(cleaned_item["id"]))  # 処理済みIDに追加
+            processed_ids.add(str(cleaned_item["id"]))
 
-            # 安全のため、5問ごとにファイルに書き出す
-            if len(processed_data) % 5 == 0:
+            # 安全のため、10問ごとにファイルに書き出す (OpenAIは安定しているので頻度少なめでOK)
+            if len(processed_data) % 10 == 0:
                 with open(OUTPUT_FILE, "w", encoding="utf-8") as f:
                     json.dump(processed_data, f, ensure_ascii=False, indent=2)
 
-        time.sleep(1.0)  # 基本待機時間を確保
+        # OpenAIは高速なのでWaitは短めでOK
+        time.sleep(0.1)
 
     # 最終保存
     with open(OUTPUT_FILE, "w", encoding="utf-8") as f:

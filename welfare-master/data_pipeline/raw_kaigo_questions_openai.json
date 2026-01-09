@@ -1,0 +1,290 @@
+[
+  {
+    "id": "37_1_AM",
+    "question": "人間の尊厳と自立に関する問題文...",
+    "options": [
+      "選択肢1",
+      "選択肢2",
+      "選択肢3",
+      "選択肢4",
+      "選択肢5"
+    ],
+    "correct_answer": "選択肢4",
+    "explanation": "",
+    "raw_category": "人間の尊厳と自立",
+    "raw_year": "no37",
+    "category_group": "過去問（介護）"
+  },
+  {
+    "id": "37_2_AM",
+    "question": "人間の尊厳と自立に関する別の問題文...",
+    "options": [
+      "選択肢1",
+      "選択肢2",
+      "選択肢3",
+      "選択肢4",
+      "選択肢5"
+    ],
+    "correct_answer": "選択肢5",
+    "explanation": "",
+    "raw_category": "人間の尊厳と自立",
+    "raw_year": "no37",
+    "category_group": "過去問（介護）"
+  },
+  {
+    "id": "37_3_AM",
+    "question": "人間関係とコミュニケーションに関する問題文...",
+    "options": [
+      "選択肢1",
+      "選択肢2",
+      "選択肢3",
+      "選択肢4",
+      "選択肢5"
+    ],
+    "correct_answer": "選択肢2",
+    "explanation": "",
+    "raw_category": "人間関係とコミュニケーション",
+    "raw_year": "no37",
+    "category_group": "過去問（介護）"
+  },
+  {
+    "id": "37_4_AM",
+    "question": "人間関係とコミュニケーションに関する別の問題文...",
+    "options": [
+      "選択肢1",
+      "選択肢2",
+      "選択肢3",
+      "選択肢4",
+      "選択肢5"
+    ],
+    "correct_answer": "選択肢5",
+    "explanation": "",
+    "raw_category": "人間関係とコミュニケーション",
+    "raw_year": "no37",
+    "category_group": "過去問（介護）"
+  },
+  {
+    "id": "37_5_AM",
+    "question": "人間関係とコミュニケーションに関する3つ目の問題文...",
+    "options": [
+      "選択肢1",
+      "選択肢2",
+      "選択肢3",
+      "選択肢4",
+      "選択肢5"
+    ],
+    "correct_answer": "選択肢5",
+    "explanation": "",
+    "raw_category": "人間関係とコミュニケーション",
+    "raw_year": "no37",
+    "category_group": "過去問（介護）"
+  },
+  {
+    "id": "37_6_AM",
+    "question": "人間関係とコミュニケーションに関する4つ目の問題文...",
+    "options": [
+      "選択肢1",
+      "選択肢2",
+      "選択肢3",
+      "選択肢4",
+      "選択肢5"
+    ],
+    "correct_answer": "選択肢2",
+    "explanation": "",
+    "raw_category": "人間関係とコミュニケーション",
+    "raw_year": "no37",
+    "category_group": "過去問（介護）"
+  },
+  {
+    "id": "37_7_AM",
+    "question": "社会の理解に関する問題文...",
+    "options": [
+      "選択肢1",
+      "選択肢2",
+      "選択肢3",
+      "選択肢4",
+      "選択肢5"
+    ],
+    "correct_answer": "選択肢4",
+    "explanation": "",
+    "raw_category": "社会の理解",
+    "raw_year": "no37",
+    "category_group": "過去問（介護）"
+  },
+  {
+    "id": "36_PM_46",
+    "question": "バリデーション（validation）に基づく，認知症（dementia）の人の動きや感情に合わせるコミュニケーション技法として，正しいものを１つ選びなさい。",
+    "options": [
+      "センタリング（centering）",
+      "リフレージング（rephrasing）",
+      "レミニシング（reminiscing）",
+      "ミラーリング（mirroring）",
+      "カリブレーション（calibration）"
+    ],
+    "correct_answer": "ミラーリング（mirroring）",
+    "explanation": "選択肢４及び選択肢５のいずれも正答",
+    "raw_category": "認知症の理解",
+    "raw_year": "no36",
+    "category_group": "過去問（介護）"
+  },
+  {
+    "id": "35_PM_1",
+    "question": "この問題では、介護の基本について説明してください。",
+    "options": [
+      "選択肢1",
+      "選択肢2",
+      "選択肢3",
+      "選択肢4",
+      "選択肢5"
+    ],
+    "correct_answer": "選択肢4",
+    "explanation": "",
+    "raw_category": "人間の尊厳と自立",
+    "raw_year": "no35",
+    "category_group": "過去問（介護）"
+  },
+  {
+    "id": "35_PM_2",
+    "question": "人間の尊厳を高めるための行動を選択してください。",
+    "options": [
+      "選択肢1",
+      "選択肢2",
+      "選択肢3",
+      "選択肢4",
+      "選択肢5"
+    ],
+    "correct_answer": "選択肢3",
+    "explanation": "",
+    "raw_category": "人間の尊厳と自立",
+    "raw_year": "no35",
+    "category_group": "過去問（介護）"
+  },
+  {
+    "id": "35_PM_3",
+    "question": "コミュニケーション技術の基本を説明してください。",
+    "options": [
+      "選択肢1",
+      "選択肢2",
+      "選択肢3",
+      "選択肢4",
+      "選択肢5"
+    ],
+    "correct_answer": "選択肢2",
+    "explanation": "",
+    "raw_category": "人間関係とコミュニケーション",
+    "raw_year": "no35",
+    "category_group": "過去問（介護）"
+  },
+  {
+    "id": "35_PM_4",
+    "question": "社会の理解において重要な要素を選んでください。",
+    "options": [
+      "選択肢1",
+      "選択肢2",
+      "選択肢3",
+      "選択肢4",
+      "選択肢5"
+    ],
+    "correct_answer": "選択肢3",
+    "explanation": "",
+    "raw_category": "社会の理解",
+    "raw_year": "no35",
+    "category_group": "過去問（介護）"
+  },
+  {
+    "id": "35_PM_5",
+    "question": "生活支援技術について説明してください。",
+    "options": [
+      "選択肢1",
+      "選択肢2",
+      "選択肢3",
+      "選択肢4",
+      "選択肢5"
+    ],
+    "correct_answer": "選択肢4",
+    "explanation": "",
+    "raw_category": "生活支援技術",
+    "raw_year": "no35",
+    "category_group": "過去問（介護）"
+  },
+  {
+    "id": "35_PM_6",
+    "question": "介護過程における基本的なステップは何ですか？",
+    "options": [
+      "選択肢1",
+      "選択肢2",
+      "選択肢3",
+      "選択肢4",
+      "選択肢5"
+    ],
+    "correct_answer": "選択肢3",
+    "explanation": "",
+    "raw_category": "介護過程",
+    "raw_year": "no35",
+    "category_group": "過去問（介護）"
+  },
+  {
+    "id": "35_PM_7",
+    "question": "こころとからだのしくみに関して、正しい選択肢を選んでください。",
+    "options": [
+      "選択肢1",
+      "選択肢2",
+      "選択肢3",
+      "選択肢4",
+      "選択肢5"
+    ],
+    "correct_answer": "選択肢2",
+    "explanation": "",
+    "raw_category": "こころとからだのしくみ",
+    "raw_year": "no35",
+    "category_group": "過去問（介護）"
+  },
+  {
+    "id": "35_PM_8",
+    "question": "発達と老化の理解について述べてください。",
+    "options": [
+      "選択肢1",
+      "選択肢2",
+      "選択肢3",
+      "選択肢4",
+      "選択肢5"
+    ],
+    "correct_answer": "選択肢3",
+    "explanation": "",
+    "raw_category": "発達と老化の理解",
+    "raw_year": "no35",
+    "category_group": "過去問（介護）"
+  },
+  {
+    "id": "35_PM_9",
+    "question": "認知症の理解に必要な情報を選んでください。",
+    "options": [
+      "選択肢1",
+      "選択肢2",
+      "選択肢3",
+      "選択肢4",
+      "選択肢5"
+    ],
+    "correct_answer": "選択肢4",
+    "explanation": "",
+    "raw_category": "認知症の理解",
+    "raw_year": "no35",
+    "category_group": "過去問（介護）"
+  },
+  {
+    "id": "35_PM_10",
+    "question": "障害の理解に関する重要な点を選択してください。",
+    "options": [
+      "選択肢1",
+      "選択肢2",
+      "選択肢3",
+      "選択肢4",
+      "選択肢5"
+    ],
+    "correct_answer": "選択肢5",
+    "explanation": "",
+    "raw_category": "障害の理解",
+    "raw_year": "no35",
+    "category_group": "過去問（介護）"
+  }
+]

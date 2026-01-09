@@ -1,0 +1,39 @@
+{
+    "expo": {
+        "name": "社会福祉士Master",
+        "slug": "welfare-master-social",
+        "version": "1.0.0",
+        "sdkVersion": "54.0.0",
+        "orientation": "portrait",
+        "icon": "./assets/icon-social.png",
+        "userInterfaceStyle": "light",
+        "splash": {
+            "image": "./assets/splash-icon.png",
+            "resizeMode": "contain",
+            "backgroundColor": "#ffffff"
+        },
+        "ios": {
+            "supportsTablet": true,
+            "bundleIdentifier": "com.yourname.welfare.social"
+        },
+        "android": {
+            "adaptiveIcon": {
+                "foregroundImage": "./assets/adaptive-icon.png",
+                "backgroundColor": "#ffffff"
+            },
+            "package": "com.yourname.welfare.social"
+        },
+        "web": {
+            "favicon": "./assets/favicon.png"
+        },
+        "scheme": "welfare-social",
+        "experiments": {
+            "typedRoutes": true
+        },
+        "extra": {
+            "variant": "social",
+            "brandColor": "#F97316",
+            "title": "社会福祉士"
+        }
+    }
+}

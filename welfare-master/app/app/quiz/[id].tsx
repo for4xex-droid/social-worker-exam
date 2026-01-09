@@ -4,6 +4,7 @@ import { useState, useEffect } from 'react';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { ChevronLeft, CheckCircle, XCircle, Type, Info, Star } from 'lucide-react-native';
 import clsx from 'clsx';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 import { db } from '../../db/client';
 import { questions, userProgress } from '../../db/schema';
 import { eq, and, gt, asc, isNull } from 'drizzle-orm';
@@ -16,6 +17,7 @@ interface QuestionData {
     correct_answers: number[]; // Converted from string[] to indices
     explanation: string;
     year: string | null;
+    group: string;
 }
 
 /**
@@ -60,6 +62,8 @@ export default function QuizPlayer() {
     const [correctCount, setCorrectCount] = useState(0);
     const [questionsAnswered, setQuestionsAnswered] = useState(0);
 
+    const TEXT_SIZE_KEY = '@welfare_master_text_size';
+
     const isReviewMode = mode === 'review';
     const brandColor = Constants.expoConfig?.extra?.brandColor || '#FF6B00';
 
@@ -80,7 +84,8 @@ export default function QuizPlayer() {
                     let correctIndices: number[] = [];
 
                     // Strategy 1: Exact Match (with simple trim)
-                    const cleanAnswers = q.correctAnswer.map(a => a.trim());
+                    // Strategy 1: Exact Match (with simple trim)
+                    const cleanAnswers = q.correctAnswer.map((a: string) => a.trim());
                     correctIndices = q.options.reduce<number[]>((acc, opt, idx) => {
                         if (cleanAnswers.includes(opt.trim())) {
                             acc.push(idx);
@@ -92,7 +97,7 @@ export default function QuizPlayer() {
                     if (correctIndices.length === 0) {
                         correctIndices = q.options.reduce<number[]>((acc, opt, idx) => {
                             const cleanOpt = opt.trim().replace(/[.,。、]+$/, '');
-                            const isMatch = cleanAnswers.some(ans => {
+                            const isMatch = cleanAnswers.some((ans: string) => {
                                 const cleanAns = ans.trim().replace(/[.,。、]+$/, '');
                                 return cleanAns === cleanOpt || cleanOpt.includes(cleanAns) || cleanAns.includes(cleanOpt);
                             });
@@ -103,17 +108,16 @@ export default function QuizPlayer() {
 
                     // Strategy 3: Numeric Indices (Backup for raw index data)
                     if (correctIndices.length === 0) {
-                        const numericAnswers = cleanAnswers.map(a => parseInt(a)).filter(n => !isNaN(n));
+                        const numericAnswers = cleanAnswers.map((a: string) => parseInt(a)).filter((n: number) => !isNaN(n));
                         if (numericAnswers.length > 0) {
                             // Assuming 1-based index in data
-                            correctIndices = numericAnswers.map(n => n - 1).filter(i => i >= 0 && i < q.options.length);
+                            correctIndices = numericAnswers.map((n: number) => n - 1).filter((i: number) => i >= 0 && i < q.options.length);
                         }
                     }
 
                     // Deduplicate
-                    correctIndices = [...new Set(correctIndices)];
+                    correctIndices = Array.from(new Set(correctIndices));
 
-                    console.log(`[QuizDebug] Loaded Q:${q.id}, CorrectIndices:${correctIndices}, RawAnswers:${JSON.stringify(q.correctAnswer)}`);
 
                     setQuestion({
                         id: q.id,
@@ -121,7 +125,8 @@ export default function QuizPlayer() {
                         options: q.options,
                         correct_answers: correctIndices,
                         explanation: q.explanation,
-                        year: q.year
+                        year: q.year,
+                        group: q.group
                     });
                 }
             } catch (e) {
@@ -132,6 +137,22 @@ export default function QuizPlayer() {
         };
         loadQuestion();
     }, [id]);
+
+    useEffect(() => {
+        const loadSettings = async () => {
+            try {
+                const savedSize = await AsyncStorage.getItem(TEXT_SIZE_KEY);
+                if (savedSize !== null) {
+                    setTextSizeMode(parseInt(savedSize));
+                }
+            } catch (e) {
+                console.error("Failed to load settings", e);
+            }
+        };
+        loadSettings();
+    }, []);
+
+    // Text size load only
 
     const toggleSelection = (index: number) => {
         if (isSubmitted) return;
@@ -201,6 +222,7 @@ export default function QuizPlayer() {
                     .from(questions)
                     .where(and(
                         question.year ? eq(questions.year, question.year) : isNull(questions.year),
+                        eq(questions.group, question.group),
                         gt(questions.id, question.id)
                     ))
                     .orderBy(asc(questions.id))
@@ -230,9 +252,16 @@ export default function QuizPlayer() {
         }
     };
 
-    const cycleTextSize = () => {
-        setTextSizeMode(prev => (prev + 1) % 3);
+    const cycleTextSize = async () => {
+        const nextSize = (textSizeMode + 1) % 3;
+        setTextSizeMode(nextSize);
+        try {
+            await AsyncStorage.setItem(TEXT_SIZE_KEY, nextSize.toString());
+        } catch (e) {
+            console.error("Failed to save text size", e);
+        }
     };
+
 
     // Calculate dynamic font sizes
     const fontSizes = [
@@ -282,12 +311,14 @@ export default function QuizPlayer() {
                     <Text className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-0.5">Question ID</Text>
                     <Text className="font-black text-slate-900 border-b-2 pb-0.5 px-1" style={{ borderBottomColor: brandColor }}>{id}</Text>
                 </View>
-                <TouchableOpacity onPress={cycleTextSize} className="w-10 h-10 items-center justify-center bg-slate-50 rounded-full">
-                    <Type size={18} color="#64748b" />
-                    <View className="absolute -top-1 -right-1 w-4 h-4 rounded-full items-center justify-center" style={{ backgroundColor: brandColor }}>
-                        <Text className="text-[8px] text-white font-bold">{getSizeLabel(textSizeMode)}</Text>
-                    </View>
-                </TouchableOpacity>
+                <View className="flex-row items-center gap-2">
+                    <TouchableOpacity onPress={cycleTextSize} className="w-10 h-10 items-center justify-center bg-slate-50 rounded-full">
+                        <Type size={18} color="#64748b" />
+                        <View className="absolute -top-1 -right-1 w-4 h-4 rounded-full items-center justify-center" style={{ backgroundColor: brandColor }}>
+                            <Text className="text-[8px] text-white font-bold">{getSizeLabel(textSizeMode)}</Text>
+                        </View>
+                    </TouchableOpacity>
+                </View>
             </View>
 
             <ScrollView className="flex-1" showsVerticalScrollIndicator={false} contentContainerStyle={{ padding: 24, paddingBottom: 100 }}>

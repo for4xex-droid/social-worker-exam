@@ -3,8 +3,7 @@ import { useRouter } from 'expo-router';
 import { useState, useEffect } from 'react';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { StatusBar } from 'expo-status-bar';
-import { ChevronRight, CheckCircle2, Trophy, Clock, Train } from 'lucide-react-native';
-import Animated, { FadeIn, FadeOut, SlideInRight, SlideOutLeft } from 'react-native-reanimated';
+import { ChevronRight, CheckCircle2, Trophy, Clock, Train, Heart, Users, Brain, Sparkles } from 'lucide-react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 
@@ -19,10 +18,10 @@ export default function Onboarding() {
     const [selectedStyle, setSelectedStyle] = useState<string | null>(null);
 
     const licenses = [
-        { id: 'care', label: '介護福祉士', emoji: '👵' },
-        { id: 'social', label: '社会福祉士', emoji: '🧑‍💼' },
-        { id: 'mental', label: '精神保健福祉士', emoji: '🧠' },
-        { id: 'none', label: '取得予定 / なし', emoji: '✨' },
+        { id: 'care', label: '介護福祉士', icon: Heart, color: '#10B981' },
+        { id: 'social', label: '社会福祉士', icon: Users, color: '#F97316' },
+        { id: 'mental', label: '精神保健福祉士', icon: Brain, color: '#EC4899' },
+        { id: 'none', label: '取得予定 / なし', icon: Sparkles, color: '#64748B' },
     ];
 
     const styles = [
@@ -32,7 +31,7 @@ export default function Onboarding() {
 
     const handleFinish = async () => {
         try {
-            await AsyncStorage.setItem('onboarding_completed', 'true');
+            await AsyncStorage.setItem('onboarding_completed_v2', 'true');
             if (selectedLicense) {
                 await AsyncStorage.setItem('user_license', selectedLicense);
             }
@@ -46,9 +45,7 @@ export default function Onboarding() {
         switch (step) {
             case 'welcome':
                 return (
-                    <Animated.View
-                        entering={FadeIn.duration(800)}
-                        exiting={FadeOut}
+                    <View
                         className="flex-1 items-center justify-center px-8"
                     >
                         <View className="w-24 h-24 bg-orange-500 rounded-[32px] items-center justify-center mb-8 shadow-xl shadow-orange-200">
@@ -57,8 +54,8 @@ export default function Onboarding() {
                         <Text className="text-3xl font-black text-slate-900 text-center leading-tight">
                             Welfare Masterへ{"\n"}ようこそ
                         </Text>
-                        <Text className="text-slate-400 text-center mt-6 leading-6 text-base">
-                            あなたの国家試験合格を{"\n"}AIが最短ルートでサポートします。
+                        <Text className="text-slate-400 text-center mt-4 leading-6 text-sm">
+                            あなたの国家試験合格を{"\n"}最短ルートでサポートします。
                         </Text>
                         <TouchableOpacity
                             onPress={() => setStep('license')}
@@ -67,33 +64,36 @@ export default function Onboarding() {
                             <Text className="text-white font-bold text-lg mr-2">はじめる</Text>
                             <ChevronRight size={20} color="white" />
                         </TouchableOpacity>
-                    </Animated.View>
+                    </View>
                 );
 
             case 'license':
                 return (
-                    <Animated.View
-                        entering={SlideInRight}
-                        exiting={SlideOutLeft}
+                    <View
                         className="flex-1 px-8 pt-12"
                     >
                         <Text className="text-2xl font-black text-slate-900 mb-2">保有資格を教えてください</Text>
                         <Text className="text-slate-400 text-sm mb-8">選択した資格はゴールドバッジとして{"\n"}プロフィールに表示されます。</Text>
 
-                        <View className="gap-3">
-                            {licenses.map((item) => (
-                                <TouchableOpacity
-                                    key={item.id}
-                                    onPress={() => setSelectedLicense(item.id)}
-                                    className={`p-5 rounded-2xl border-2 flex-row items-center justify-between ${selectedLicense === item.id ? 'border-orange-500 bg-orange-50' : 'border-slate-100 bg-white'}`}
-                                >
-                                    <View className="flex-row items-center gap-4">
-                                        <Text className="text-2xl">{item.emoji}</Text>
-                                        <Text className="text-slate-800 font-bold text-base">{item.label}</Text>
-                                    </View>
-                                    {selectedLicense === item.id && <CheckCircle2 size={24} color="#f97316" />}
-                                </TouchableOpacity>
-                            ))}
+                        <View className="gap-2.5">
+                            {licenses.map((item) => {
+                                const Icon = item.icon;
+                                return (
+                                    <TouchableOpacity
+                                        key={item.id}
+                                        onPress={() => setSelectedLicense(item.id)}
+                                        className={`p-4 rounded-xl border-2 flex-row items-center justify-between ${selectedLicense === item.id ? 'border-orange-500 bg-orange-50' : 'border-slate-100 bg-white'}`}
+                                    >
+                                        <View className="flex-row items-center gap-3.5">
+                                            <View className={`w-10 h-10 rounded-lg items-center justify-center ${selectedLicense === item.id ? 'bg-orange-500/10' : 'bg-slate-50'}`}>
+                                                <Icon size={20} color={selectedLicense === item.id ? '#f97316' : '#64748b'} />
+                                            </View>
+                                            <Text className="text-slate-800 font-bold text-base">{item.label}</Text>
+                                        </View>
+                                        {selectedLicense === item.id && <CheckCircle2 size={20} color="#f97316" />}
+                                    </TouchableOpacity>
+                                );
+                            })}
                         </View>
 
                         <TouchableOpacity
@@ -103,35 +103,33 @@ export default function Onboarding() {
                         >
                             <Text className="text-white font-bold text-lg">次へ</Text>
                         </TouchableOpacity>
-                    </Animated.View>
+                    </View>
                 );
 
             case 'style':
                 return (
-                    <Animated.View
-                        entering={SlideInRight}
-                        exiting={SlideOutLeft}
+                    <View
                         className="flex-1 px-8 pt-12"
                     >
                         <Text className="text-2xl font-black text-slate-900 mb-2">学習スタイルは？</Text>
                         <Text className="text-slate-400 text-sm mb-8">ライフスタイルに合わせて、{"\n"}最適な通知タイミングを提案します。</Text>
 
-                        <View className="gap-4">
+                        <View className="gap-3.5">
                             {styles.map((item) => {
                                 const Icon = item.icon;
                                 return (
                                     <TouchableOpacity
                                         key={item.id}
                                         onPress={() => setSelectedStyle(item.id)}
-                                        className={`p-6 rounded-3xl border-2 ${selectedStyle === item.id ? 'border-orange-500 bg-orange-50' : 'border-slate-100 bg-white'}`}
+                                        className={`p-5 rounded-2xl border-2 ${selectedStyle === item.id ? 'border-orange-500 bg-orange-50' : 'border-slate-100 bg-white'}`}
                                     >
-                                        <View className="flex-row items-center gap-4 mb-2">
-                                            <View className={`p-3 rounded-2xl ${selectedStyle === item.id ? 'bg-orange-500' : 'bg-slate-100'}`}>
-                                                <Icon size={24} color={selectedStyle === item.id ? 'white' : '#64748b'} />
+                                        <View className="flex-row items-center gap-4">
+                                            <View className={`p-2.5 rounded-xl ${selectedStyle === item.id ? 'bg-orange-500' : 'bg-slate-100'}`}>
+                                                <Icon size={20} color={selectedStyle === item.id ? 'white' : '#64748b'} />
                                             </View>
                                             <View>
-                                                <Text className="text-slate-800 font-black text-lg">{item.label}</Text>
-                                                <Text className="text-slate-400 text-xs">{item.desc}</Text>
+                                                <Text className="text-slate-800 font-black text-base">{item.label}</Text>
+                                                <Text className="text-slate-400 text-[11px]">{item.desc}</Text>
                                             </View>
                                         </View>
                                     </TouchableOpacity>
@@ -146,13 +144,12 @@ export default function Onboarding() {
                         >
                             <Text className="text-white font-bold text-lg">診断を完了する</Text>
                         </TouchableOpacity>
-                    </Animated.View>
+                    </View>
                 );
 
             case 'finish':
                 return (
-                    <Animated.View
-                        entering={FadeIn}
+                    <View
                         className="flex-1 items-center justify-center px-8"
                     >
                         <LinearGradient
@@ -180,7 +177,7 @@ export default function Onboarding() {
                         >
                             <Text className="text-white font-bold text-lg">学習をはじめる</Text>
                         </TouchableOpacity>
-                    </Animated.View>
+                    </View>
                 );
         }
     };
