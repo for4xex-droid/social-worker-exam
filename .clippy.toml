@@ -1,0 +1,4 @@
+allow-print-in-tests = true
+[warnings]
+unwrap_used = "warn"
+expect_used = "warn"

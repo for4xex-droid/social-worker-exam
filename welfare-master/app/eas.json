@@ -1,0 +1,32 @@
+{
+    "cli": {
+        "version": ">= 7.0.0",
+        "appVersionSource": "remote"
+    },
+    "build": {
+        "development": {
+            "developmentClient": true,
+            "distribution": "internal"
+        },
+        "preview": {
+            "android": {
+                "buildType": "apk"
+            },
+            "distribution": "internal"
+        },
+        "preview-mental": {
+            "extends": "preview",
+            "env": {
+                "APP_VARIANT": "mental",
+                "GRADLE_OPTS": "-Dorg.gradle.jvmargs=-Xmx3072m -XX:MaxMetaspaceSize=1024m"
+            }
+        },
+        "production": {
+            "channel": "production",
+            "autoIncrement": true
+        }
+    },
+    "submit": {
+        "production": {}
+    }
+}

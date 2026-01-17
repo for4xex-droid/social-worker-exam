@@ -1,0 +1,762 @@
+[
+  {
+    "id": "gen_criminal_fallback_fba56c08",
+    "questionText": "保護観察所における保護観察の目的として最も適切なものはどれか。",
+    "options": [
+      "犯罪者に刑罰を課すこと。",
+      "再犯を防ぎ、社会復帰を促進すること。",
+      "犯罪者の経済状況を改善すること。",
+      "被害者の救済を行うこと。",
+      "刑罰を受けた者を社会から隔離すること。"
+    ],
+    "correctAnswer": "2",
+    "explanation": "保護観察所の主な目的は、再犯を防止し、対象者が社会に円滑に復帰するのを助けることである。刑罰を課すことや被害者の救済などは他の機関や制度の役割である。",
+    "group": "common_social",
+    "categoryLabel": "刑事司法と福祉",
+    "year": "2025_prediction",
+    "type": "prediction",
+    "isMastered": false,
+    "quality_score": 5
+  },
+  {
+    "id": "gen_criminal_fallback_9631b00d",
+    "questionText": "保護観察所の職員が行う職務に該当しないものはどれか。",
+    "options": [
+      "対象者の生活状況の把握。",
+      "対象者への面接指導。",
+      "対象者の家族への援助。",
+      "対象者の就業先の提供。",
+      "保護観察プログラムの作成。"
+    ],
+    "correctAnswer": "4",
+    "explanation": "保護観察所の職員は対象者の生活支援や指導を行うが、通常、直接的な就業先の提供は行わない。就業支援は職業紹介所やハローワークなどの他の機関と連携して行われる。",
+    "group": "common_social",
+    "categoryLabel": "刑事司法と福祉",
+    "year": "2025_prediction",
+    "type": "prediction",
+    "isMastered": false,
+    "quality_score": 5
+  },
+  {
+    "id": "gen_criminal_fallback_8d888234",
+    "questionText": "保護観察処分少年を対象とした更生保護制度の特徴として正しくないものはどれか。",
+    "options": [
+      "少年の問題行動の原因を特定し、改善を図ることから始まる。",
+      "少年の保護者とも連携し、支援を提供する。",
+      "少年に対して義務的な就労指導を行う。",
+      "社会復帰を目指し、教育プログラムを提供する。",
+      "個々の少年の特性に応じた支援を行う。"
+    ],
+    "correctAnswer": "3",
+    "explanation": "保護観察処分では、就労が義務付けられているわけではなく、少年の状況に応じた柔軟な支援が提供される。教育プログラムや生活指導は、社会復帰の一環として提供されるが、義務的な就労指導は行わない。",
+    "group": "common_social",
+    "categoryLabel": "刑事司法と福祉",
+    "year": "2025_prediction",
+    "type": "prediction",
+    "isMastered": false,
+    "quality_score": 5
+  },
+  {
+    "id": "gen_criminal_fallback_f7f24f3b",
+    "questionText": "保護観察所における指導監督の方法として不適切なものはどれか。",
+    "options": [
+      "定期的な面接により、指導監督を行う。",
+      "電話による状況確認を行う。",
+      "対象者の自宅訪問を行う。",
+      "対象者にGPS機器を取り付け、追跡する。",
+      "指導を受ける者の状況を記録し、分析する。"
+    ],
+    "correctAnswer": "4",
+    "explanation": "保護観察においては、人的な接触や生活指導が主な活動であり、GPS機器の使用による追跡は通常行われない。そのような電子的監視方法は、法律的に異なる制度の下で行われることが多い。",
+    "group": "common_social",
+    "categoryLabel": "刑事司法と福祉",
+    "year": "2025_prediction",
+    "type": "prediction",
+    "isMastered": false,
+    "quality_score": 5
+  },
+  {
+    "id": "gen_criminal_fallback_d21b1384",
+    "questionText": "保護司の主たる職務として、最も適切なものはどれか。",
+    "options": [
+      "刑事訴訟における被告人の弁護",
+      "刑務所内での受刑者の監督",
+      "仮釈放者や保護観察中の者への指導および援助",
+      "裁判所での判決の執行",
+      "犯罪被害者への損害賠償の仲介"
+    ],
+    "correctAnswer": "3",
+    "explanation": "保護司は仮釈放者や保護観察中の者に対し、社会復帰を支援するための指導および援助を行う役割を担っています。このため、正解は選択肢3です。",
+    "group": "common_social",
+    "categoryLabel": "刑事司法と福祉",
+    "year": "2025_prediction",
+    "type": "prediction",
+    "isMastered": false,
+    "quality_score": 5
+  },
+  {
+    "id": "gen_criminal_fallback_dc7f7d2e",
+    "questionText": "保護司の配置に関して正しいものはどれか。",
+    "options": [
+      "保護司は常勤の国家公務員である。",
+      "地域社会のボランティアとして活動する。",
+      "裁判所の職員として配置される。",
+      "警察官の補佐役として配置される。",
+      "犯罪被害者支援団体の職員として活動する。"
+    ],
+    "correctAnswer": "2",
+    "explanation": "保護司は常勤の国家公務員ではなく、地域社会のボランティアとして活動しています。裁判所や警察、被害者支援団体の職員ではありません。このため、正解は選択肢2です。",
+    "group": "common_social",
+    "categoryLabel": "刑事司法と福祉",
+    "year": "2025_prediction",
+    "type": "prediction",
+    "isMastered": false,
+    "quality_score": 5
+  },
+  {
+    "id": "gen_criminal_fallback_2908241f",
+    "questionText": "保護司の法的地位に関して誤っているものはどれか。",
+    "options": [
+      "非常勤の公務員である。",
+      "法務大臣が委嘱する。",
+      "費用弁償が行われる。",
+      "任期は定められていない。",
+      "活動に際しての秘密保持義務がある。"
+    ],
+    "correctAnswer": "4",
+    "explanation": "保護司の任期は通常2年であり、法務大臣により委嘱される非常勤の公務員として活動します。そのため、「任期は定められていない」という選択肢4は誤りです。",
+    "group": "common_social",
+    "categoryLabel": "刑事司法と福祉",
+    "year": "2025_prediction",
+    "type": "prediction",
+    "isMastered": false,
+    "quality_score": 5
+  },
+  {
+    "id": "gen_criminal_fallback_8c558e8a",
+    "questionText": "保護司が活動するために必要な資格として正しいものはどれか。",
+    "options": [
+      "弁護士資格",
+      "社会福祉士資格",
+      "特別な資格は必要ない",
+      "司法書士資格",
+      "精神保健福祉士資格"
+    ],
+    "correctAnswer": "3",
+    "explanation": "保護司になるために特別な資格は必要ありません。法務大臣が地域社会における具合に合わせて適任者を選任します。このため、正解は選択肢3です。",
+    "group": "common_social",
+    "categoryLabel": "刑事司法と福祉",
+    "year": "2025_prediction",
+    "type": "prediction",
+    "isMastered": false,
+    "quality_score": 5
+  },
+  {
+    "id": "gen_criminal_fallback_98909adc",
+    "questionText": "仮釈放の申請に必要な条件として正しいものはどれか。",
+    "options": [
+      "受刑者が刑期の半分以上を服役していること。",
+      "受刑者が執行猶予期間にあること。",
+      "受刑者が被害者に経済的賠償を完了していること。",
+      "受刑者が刑務所の中で模範的な行動を示していたこと。",
+      "受刑者が出所後の住居を確保していること。"
+    ],
+    "correctAnswer": "1",
+    "explanation": "仮釈放の要件として、受刑者が刑期の一定割合（通常は半分）を経過していることが求められる場合があります。他の選択肢には法的な要件が含まれていないか、追加的な条件に過ぎません。",
+    "group": "common_social",
+    "categoryLabel": "刑事司法と福祉",
+    "year": "2025_prediction",
+    "type": "prediction",
+    "isMastered": false,
+    "quality_score": 5
+  },
+  {
+    "id": "gen_criminal_fallback_39321732",
+    "questionText": "日本における仮釈放の決定権を持つ機関はどれか。",
+    "options": [
+      "地方裁判所",
+      "高等裁判所",
+      "仮釈放審査委員会",
+      "刑務所の所長",
+      "法務省"
+    ],
+    "correctAnswer": "3",
+    "explanation": "仮釈放の決定は、通常、仮釈放審査委員会によって行われます。この委員会は、受刑者の再社会化可能性や犯罪の反省状況を判断して決定を下します。",
+    "group": "common_social",
+    "categoryLabel": "刑事司法と福祉",
+    "year": "2025_prediction",
+    "type": "prediction",
+    "isMastered": false,
+    "quality_score": 5
+  },
+  {
+    "id": "gen_criminal_fallback_935fcacc",
+    "questionText": "仮釈放中に受刑者が守るべき義務に該当しないものはどれか。",
+    "options": [
+      "定期的に保護観察官と面会すること。",
+      "指定された居住地に居住すること。",
+      "犯罪を犯さないこと。",
+      "毎日報告書を提出すること。",
+      "無断で居住地を変更しないこと。"
+    ],
+    "correctAnswer": "4",
+    "explanation": "仮釈放中の受刑者は、通常、保護観察官との定期的な面会や居住地の報告を義務付けられますが、毎日報告書を提出する義務は一般的ではありません。他の選択肢はすべて一般的な仮釈放中の義務に該当します。",
+    "group": "common_social",
+    "categoryLabel": "刑事司法と福祉",
+    "year": "2025_prediction",
+    "type": "prediction",
+    "isMastered": false,
+    "quality_score": 5
+  },
+  {
+    "id": "gen_criminal_fallback_35aa0956",
+    "questionText": "仮釈放が取り消される可能性のある行動として適切でないものはどれか。",
+    "options": [
+      "出所後に無断で国外に渡航した。",
+      "保護観察官の指示に従わなかった。",
+      "軽微な交通違反を犯した。",
+      "犯罪の再犯をした。",
+      "仮釈放中のルールを頻繁に破った。"
+    ],
+    "correctAnswer": "3",
+    "explanation": "仮釈放の取り消しは、通常重大な違反行動によります。軽微な交通違反は、取り消しの理由として適切ではない場合が多いですが、他の選択肢にある行動は取り消しの根拠となり得ます。",
+    "group": "common_social",
+    "categoryLabel": "刑事司法と福祉",
+    "year": "2025_prediction",
+    "type": "prediction",
+    "isMastered": false,
+    "quality_score": 5
+  },
+  {
+    "id": "gen_criminal_fallback_90987e51",
+    "questionText": "生活環境の調整において、調整担当官の主な役割として最も適切なものはどれか。",
+    "options": [
+      "刑務所内の業務と施設の管理を行う。",
+      "仮釈放後の社会復帰に向けたサポートを行う。",
+      "刑事事件の捜査を指揮する。",
+      "被告人の法廷での弁護を行う。",
+      "受刑者の刑期の短縮を決定する。"
+    ],
+    "correctAnswer": "2",
+    "explanation": "調整担当官は、仮釈放者や執行猶予中の者に対し、社会復帰のための支援や指導を行い、生活環境を整える役割を持っています。",
+    "group": "common_social",
+    "categoryLabel": "刑事司法と福祉",
+    "year": "2025_prediction",
+    "type": "prediction",
+    "isMastered": false,
+    "quality_score": 5
+  },
+  {
+    "id": "gen_criminal_fallback_be99d27a",
+    "questionText": "調整担当官が仮釈放者に提供するサポート内容として適切でないものはどれか。",
+    "options": [
+      "住居の確保に関する支援",
+      "職業訓練プログラムへの参加指導",
+      "仮釈放期間中の生活状況の監視",
+      "家庭内の問題解決への介入",
+      "刑事事件の犯行動機の分析"
+    ],
+    "correctAnswer": "5",
+    "explanation": "調整担当官は、仮釈放者の社会適応を支援するための生活サポートを提供しますが、刑事事件の犯行動機の分析は通常、調整担当官の業務には含まれません。",
+    "group": "common_social",
+    "categoryLabel": "刑事司法と福祉",
+    "year": "2025_prediction",
+    "type": "prediction",
+    "isMastered": false,
+    "quality_score": 5
+  },
+  {
+    "id": "gen_criminal_fallback_78388ef0",
+    "questionText": "調整担当官が関与する場面として最も考えにくいものはどれか。",
+    "options": [
+      "仮釈放者の雇用先を探す。",
+      "釈放後の住居を手配する。",
+      "療養が必要な仮釈放者に医療機関を紹介する。",
+      "仮釈放者の刑事事件の再審を支援する。",
+      "仮釈放者の家族との関係改善を図る。"
+    ],
+    "correctAnswer": "4",
+    "explanation": "調整担当官の業務は仮釈放者の生活環境の整備や支援に焦点を当てています。刑事事件の再審支援は、司法手続きに関わるものであり、調整担当官の本来の業務外です。",
+    "group": "common_social",
+    "categoryLabel": "刑事司法と福祉",
+    "year": "2025_prediction",
+    "type": "prediction",
+    "isMastered": false,
+    "quality_score": 5
+  },
+  {
+    "id": "gen_criminal_fallback_3ef5986e",
+    "questionText": "生活環境の調整において、調整担当官が果たすべき役割として重要でないものはどれか。",
+    "options": [
+      "住環境の安全性チェック",
+      "地域社会との関係構築支援",
+      "被雇用者としての職場でのパフォーマンス監督",
+      "仮釈放者の精神状態のモニタリング",
+      "家族関係の修復支援"
+    ],
+    "correctAnswer": "3",
+    "explanation": "調整担当官の役割は仮釈放者の生活支援にありますが、職場でのパフォーマンス監督は雇用主の役割であり、調整担当官の直接的な責務には該当しません。",
+    "group": "common_social",
+    "categoryLabel": "刑事司法と福祉",
+    "year": "2025_prediction",
+    "type": "prediction",
+    "isMastered": false,
+    "quality_score": 5
+  },
+  {
+    "id": "gen_criminal_fallback_71c2d052",
+    "questionText": "更生緊急保護の対象者として正しいものはどれですか？",
+    "options": [
+      "刑の執行を終えた者で帰住地が不明の者",
+      "刑務所に服役中の者",
+      "保護観察中の未成年者",
+      "刑事裁判中で未決の者",
+      "仮釈放中の者"
+    ],
+    "correctAnswer": "1",
+    "explanation": "更生緊急保護の対象者は、刑の執行を終えた後、帰住地が不明などの理由で適切な支援が必要な者です。",
+    "group": "common_social",
+    "categoryLabel": "刑事司法と福祉",
+    "year": "2025_prediction",
+    "type": "prediction",
+    "isMastered": false,
+    "quality_score": 5
+  },
+  {
+    "id": "gen_criminal_fallback_fb1a6303",
+    "questionText": "更生緊急保護の内容として最も適切な説明はどれですか？",
+    "options": [
+      "犯罪歴の削除",
+      "医療費の全額補助",
+      "職業訓練の提供",
+      "一時的な生活支援",
+      "保護観察の継続"
+    ],
+    "correctAnswer": "4",
+    "explanation": "更生緊急保護は、刑の執行を終えた後に帰住地が不明な者などに対して一時的な生活支援を提供する制度です。",
+    "group": "common_social",
+    "categoryLabel": "刑事司法と福祉",
+    "year": "2025_prediction",
+    "type": "prediction",
+    "isMastered": false,
+    "quality_score": 5
+  },
+  {
+    "id": "gen_criminal_fallback_3b8a7f4c",
+    "questionText": "更生緊急保護の支援の一環として提供されないものはどれですか？",
+    "options": [
+      "宿泊施設の提供",
+      "就職活動支援",
+      "医療費の一部負担",
+      "再犯防止プログラムの選択",
+      "長期的な住宅貸与"
+    ],
+    "correctAnswer": "5",
+    "explanation": "更生緊急保護は、一時的な支援を目的としているため、長期的な住宅貸与は提供されません。",
+    "group": "common_social",
+    "categoryLabel": "刑事司法と福祉",
+    "year": "2025_prediction",
+    "type": "prediction",
+    "isMastered": false,
+    "quality_score": 5
+  },
+  {
+    "id": "gen_criminal_fallback_b56696b0",
+    "questionText": "更生緊急保護が適用される期間として正しいものはどれですか？",
+    "options": [
+      "無制限",
+      "最長1か月",
+      "最長3か月",
+      "最長6か月",
+      "最長1年"
+    ],
+    "correctAnswer": "3",
+    "explanation": "更生緊急保護は、緊急的に一時的な支援を行うための制度で、最長3か月間の支援が行われます。",
+    "group": "common_social",
+    "categoryLabel": "刑事司法と福祉",
+    "year": "2025_prediction",
+    "type": "prediction",
+    "isMastered": false,
+    "quality_score": 5
+  },
+  {
+    "id": "gen_criminal_fallback_c81836fa",
+    "questionText": "少年法に基づく処分決定プロセスで、家庭裁判所が行うことができる処分の一つとして最も適切なものはどれか。",
+    "options": [
+      "少年刑務所への直接収容",
+      "教育的プログラムの提供",
+      "保護観察所への送致",
+      "少年院送致",
+      "死刑判決"
+    ],
+    "correctAnswer": "4",
+    "explanation": "家庭裁判所は、少年が更生するための処遇を検討し、必要な場合には少年院送致などの適切な処分を決定します。少年刑務所への送致や死刑判決は行いません。",
+    "group": "common_social",
+    "categoryLabel": "刑事司法と福祉",
+    "year": "2025_prediction",
+    "type": "prediction",
+    "isMastered": false,
+    "quality_score": 5
+  },
+  {
+    "id": "gen_criminal_fallback_452d8232",
+    "questionText": "少年法において、家庭裁判所が少年に対して審判を開く前に行う手続きとして正しいものはどれか。",
+    "options": [
+      "保護者への刑事罰の適用",
+      "少年の引き渡し",
+      "観護措置の決定",
+      "一般公開の審判",
+      "少年鑑別所への移送"
+    ],
+    "correctAnswer": "3",
+    "explanation": "観護措置は、少年が家庭裁判所での審判を受ける前に行われる手続きであり、少年の逃亡や証拠隠滅を防ぐために必要な場合に決定されます。",
+    "group": "common_social",
+    "categoryLabel": "刑事司法と福祉",
+    "year": "2025_prediction",
+    "type": "prediction",
+    "isMastered": false,
+    "quality_score": 5
+  },
+  {
+    "id": "gen_criminal_fallback_23f89a9c",
+    "questionText": "家庭裁判所が、少年の処分について調査を行う際に最も重要視する要素はどれか。",
+    "options": [
+      "犯行の悪質さ",
+      "少年の保護者の職業",
+      "被害者の感情",
+      "少年の更生の可能性",
+      "社会的評価"
+    ],
+    "correctAnswer": "4",
+    "explanation": "家庭裁判所は、少年の処分を検討するにあたり、何よりも少年の更生の可能性を重視します。これに基づいて、少年が社会に復帰できるような処分を考えます。",
+    "group": "common_social",
+    "categoryLabel": "刑事司法と福祉",
+    "year": "2025_prediction",
+    "type": "prediction",
+    "isMastered": false,
+    "quality_score": 5
+  },
+  {
+    "id": "gen_criminal_fallback_d76af183",
+    "questionText": "少年法において、家庭裁判所が非行事実を認定した場合に取ることができない処分はどれか。",
+    "options": [
+      "保護処分の不開始決定",
+      "成人として刑事裁判への移送",
+      "少年院への送致",
+      "家裁調査官の監督下への置置",
+      "被害弁済の命令"
+    ],
+    "correctAnswer": "5",
+    "explanation": "家庭裁判所が行う処分には、少年院への送致や保護観察などがありますが、被害弁済を直接命じることはありません。被害弁済については和解や弁済を促すことがありますが、直接的な命令はしません。",
+    "group": "common_social",
+    "categoryLabel": "刑事司法と福祉",
+    "year": "2025_prediction",
+    "type": "prediction",
+    "isMastered": false,
+    "quality_score": 5
+  },
+  {
+    "id": "gen_criminal_fallback_9969e322",
+    "questionText": "地域生活定着支援センターが触法障害者に対して提供する主な支援内容として正しいものはどれか。",
+    "options": [
+      "触法障害者の就職先の直接紹介",
+      "触法障害者の居住地における社会復帰支援と生活相談",
+      "刑務所内での医療支援",
+      "家庭内暴力（DV）被害者の保護",
+      "被疑者の取調べの法的支援"
+    ],
+    "correctAnswer": "2",
+    "explanation": "地域生活定着支援センターは、刑務所や少年院などを出た触法障害者が地域で安定した生活を送れるよう、社会復帰支援や生活相談を行うことを主な業務としています。",
+    "group": "common_social",
+    "categoryLabel": "刑事司法と福祉",
+    "year": "2025_prediction",
+    "type": "prediction",
+    "isMastered": false,
+    "quality_score": 5
+  },
+  {
+    "id": "gen_criminal_fallback_aab45452",
+    "questionText": "地域生活定着支援センターの主な役割の一つとして誤っているものはどれか。",
+    "options": [
+      "刑務所や少年院を出た触法障害者の住宅確保支援",
+      "地域における関係機関との連携を通じた支援体制の構築",
+      "触法障害者の判断能力向上のための法教育の提供",
+      "触法障害者の生活習慣の改善と健康管理の支援",
+      "触法障害者が福祉サービスを適切に利用できるようにするための情報提供"
+    ],
+    "correctAnswer": "3",
+    "explanation": "地域生活定着支援センターの役割に、触法障害者に対する法教育プログラムの提供は含まれていません。この業務は通常、他の教育機関や司法関連機関が担当します。",
+    "group": "common_social",
+    "categoryLabel": "刑事司法と福祉",
+    "year": "2025_prediction",
+    "type": "prediction",
+    "isMastered": false,
+    "quality_score": 5
+  },
+  {
+    "id": "gen_criminal_fallback_bb8f94bc",
+    "questionText": "地域生活定着支援センターの設置が進められる要因として正しいものはどれか。",
+    "options": [
+      "刑務所内の医療施設の充実",
+      "地域社会の高齢化に伴う犯罪傾向の変化",
+      "触法障害者の再犯防止に対する社会的期待の高まり",
+      "認知症高齢者の増加による医療費の削減",
+      "DV被害者を取り巻く法律の改正"
+    ],
+    "correctAnswer": "3",
+    "explanation": "地域生活定着支援センターの設置は、触法障害者の再犯を防止し、地域社会での安全な生活を支援するために求められています。再犯防止への社会的期待が高まったことが要因として挙げられます。",
+    "group": "common_social",
+    "categoryLabel": "刑事司法と福祉",
+    "year": "2025_prediction",
+    "type": "prediction",
+    "isMastered": false,
+    "quality_score": 5
+  },
+  {
+    "id": "gen_criminal_fallback_fb0e421a",
+    "questionText": "地域生活定着支援センターが対象とする触法障害者に関する説明として正しいものはどれか。",
+    "options": [
+      "すべての刑務所出所者が対象となる",
+      "未成年者は対象外である",
+      "障害をもつ高齢出所者も対象である",
+      "触法障害者とは関係なく、一般生活困窮者を対象にする",
+      "長期刑で服役している者のみが対象である"
+    ],
+    "correctAnswer": "3",
+    "explanation": "地域生活定着支援センターは、障害を持つ高齢者を含む触法障害者が、地域社会での再犯を防止しながら安定した生活を送ることを支援するための施設です。",
+    "group": "common_social",
+    "categoryLabel": "刑事司法と福祉",
+    "year": "2025_prediction",
+    "type": "prediction",
+    "isMastered": false,
+    "quality_score": 5
+  },
+  {
+    "id": "gen_criminal_fallback_0f898d4e",
+    "questionText": "心神喪失者等医療観察法に基づく医療の提供は、どのような機関が中心となって行うか？",
+    "options": [
+      "地方自治体の福祉事務所",
+      "認定された指定入院医療機関",
+      "保健所",
+      "一般病院の精神科",
+      "地域包括支援センター"
+    ],
+    "correctAnswer": "2",
+    "explanation": "心神喪失者等医療観察法のもとでは、司法精神病院や精神科専門の治療を提供するために認定された指定入院医療機関が主要な医療の提供機関となります。",
+    "group": "common_social",
+    "categoryLabel": "刑事司法と福祉",
+    "year": "2025_prediction",
+    "type": "prediction",
+    "isMastered": false,
+    "quality_score": 5
+  },
+  {
+    "id": "gen_criminal_fallback_6db02fb8",
+    "questionText": "心神喪失者等医療観察法における保護観察処分は、どのような場合に適用されるか？",
+    "options": [
+      "社会内での再犯が確認された場合",
+      "医療機関の治療が不可能と判断された場合",
+      "入院治療を必要としないが、社会内での改善が必要と判断された場合",
+      "家族が保護を希望した場合",
+      "本人の希望があった場合"
+    ],
+    "correctAnswer": "3",
+    "explanation": "入院治療までは必要としないが、社会内での行動を改善する必要があると判断された場合に、保護観察処分が適用され、地域での支援が行われます。",
+    "group": "common_social",
+    "categoryLabel": "刑事司法と福祉",
+    "year": "2025_prediction",
+    "type": "prediction",
+    "isMastered": false,
+    "quality_score": 5
+  },
+  {
+    "id": "gen_criminal_fallback_78bd538a",
+    "questionText": "心神喪失者等医療観察法による入院の最長期間について正しいものはどれか？",
+    "options": [
+      "無期限",
+      "3ヶ月",
+      "6ヶ月",
+      "1年",
+      "2年"
+    ],
+    "correctAnswer": "5",
+    "explanation": "指定入院医療機関での入院治療は、原則として2年を越えてはならないとされています。この期間内に必要な治療や評価が行われますが、症状の改善状況により延長が可能です。",
+    "group": "common_social",
+    "categoryLabel": "刑事司法と福祉",
+    "year": "2025_prediction",
+    "type": "prediction",
+    "isMastered": false,
+    "quality_score": 5
+  },
+  {
+    "id": "gen_criminal_fallback_10494967",
+    "questionText": "心神喪失者等医療観察法に基づく処遇決定審査は、誰が行うか？",
+    "options": [
+      "家庭裁判所",
+      "地方検察庁",
+      "指定医療機関の医師",
+      "地方裁判所",
+      "保護観察所"
+    ],
+    "correctAnswer": "4",
+    "explanation": "心神喪失者等医療観察法に基づく処遇決定は、地方裁判所が行います。裁判所は、医療の必要性や保護観察の必要性について判断します。",
+    "group": "common_social",
+    "categoryLabel": "刑事司法と福祉",
+    "year": "2025_prediction",
+    "type": "prediction",
+    "isMastered": false,
+    "quality_score": 5
+  },
+  {
+    "id": "gen_criminal_fallback_9235be0c",
+    "questionText": "日本の刑事施設における受刑者の処遇として、法律で定められていないものはどれか。",
+    "options": [
+      "職業訓練の実施",
+      "教育プログラムの提供",
+      "健康診断の実施",
+      "選挙権の行使",
+      "信仰の自由の保障"
+    ],
+    "correctAnswer": "4",
+    "explanation": "日本の刑事施設では、受刑者に対して職業訓練や教育プログラムの提供、健康診断などが法律で定められている。一方で、受刑者は法律上選挙権を有していないため、選挙権の行使は法的に認められていない。",
+    "group": "common_social",
+    "categoryLabel": "刑事司法と福祉",
+    "year": "2025_prediction",
+    "type": "prediction",
+    "isMastered": false,
+    "quality_score": 5
+  },
+  {
+    "id": "gen_criminal_fallback_f558aa99",
+    "questionText": "日本の刑事施設で受刑者に対する作業が義務付けられる法的根拠は何か。",
+    "options": [
+      "刑事収容施設法",
+      "刑法",
+      "刑事訴訟法",
+      "少年法",
+      "更生保護法"
+    ],
+    "correctAnswer": "1",
+    "explanation": "刑事収容施設法（刑事収容施設及び被収容者等の処遇に関する法律）は、受刑者の作業や処遇について定めている。この法律に基づき、受刑者は作業を行う義務がある。",
+    "group": "common_social",
+    "categoryLabel": "刑事司法と福祉",
+    "year": "2025_prediction",
+    "type": "prediction",
+    "isMastered": false,
+    "quality_score": 5
+  },
+  {
+    "id": "gen_criminal_fallback_e28b724d",
+    "questionText": "日本の刑務所において、受刑者の社会復帰を促すために行われる主な取り組みはどれか。",
+    "options": [
+      "強制的なボランティア活動",
+      "心理療法の禁止",
+      "個別指導の提供",
+      "インターネットの自由使用",
+      "投薬療法の義務化"
+    ],
+    "correctAnswer": "3",
+    "explanation": "日本の刑務所では、受刑者の社会復帰を促すために教育プログラム、職業訓練、個別指導などが行われている。特に個別指導は、受刑者一人一人に応じた支援を提供するために重要なプログラムである。",
+    "group": "common_social",
+    "categoryLabel": "刑事司法と福祉",
+    "year": "2025_prediction",
+    "type": "prediction",
+    "isMastered": false,
+    "quality_score": 5
+  },
+  {
+    "id": "gen_criminal_fallback_cfaf0770",
+    "questionText": "刑事施設における受刑者の処遇において、国際基準に準拠して改善が求められたのはどの点か。",
+    "options": [
+      "受刑者の家族との面会機会の拡大",
+      "受刑者による投票権の保障",
+      "自己決定権の完全な行使",
+      "受刑者の給与の増額",
+      "監獄におけるプライバシーの完全保障"
+    ],
+    "correctAnswer": "1",
+    "explanation": "国際基準においては、受刑者の家族との面会など、社会との繋がりを保つことが強調されており、この点について改善が求められてきた。特に家族との絆を維持することは、出所後の社会復帰において重要とされている。",
+    "group": "common_social",
+    "categoryLabel": "刑事司法と福祉",
+    "year": "2025_prediction",
+    "type": "prediction",
+    "isMastered": false,
+    "quality_score": 5
+  },
+  {
+    "id": "gen_criminal_fallback_4666f9c1",
+    "questionText": "司法ソーシャルワーカーが刑事裁判において最も重要な役割の一つはどれか？",
+    "options": [
+      "被告人の弁護を行うこと。",
+      "被告人の生活環境や心理状態の評価を行うこと。",
+      "裁判官への判決の提案を行うこと。",
+      "犯罪捜査に協力し、証拠収集を行うこと。",
+      "監獄における刑罰の執行を監督すること。"
+    ],
+    "correctAnswer": "2",
+    "explanation": "司法ソーシャルワーカーは、被告人の生活環境や心理状態を評価し、裁判においてそれがどのように影響を与えるかを報告する。これにより、刑の決定やリハビリテーションの可能性についての情報を提供する。",
+    "group": "common_social",
+    "categoryLabel": "刑事司法と福祉",
+    "year": "2025_prediction",
+    "type": "prediction",
+    "isMastered": false,
+    "quality_score": 5
+  },
+  {
+    "id": "gen_criminal_fallback_b300c93a",
+    "questionText": "司法ソーシャルワーカーが被告人のために行う支援活動として、適切でないものはどれか？",
+    "options": [
+      "雇用の支援。",
+      "教育やトレーニングプログラムへの参加支援。",
+      "宗教団体への参加強制。",
+      "家族との連絡維持の支援。",
+      "必要に応じたメンタルヘルスケアの提供。"
+    ],
+    "correctAnswer": "3",
+    "explanation": "司法ソーシャルワーカーの役割には宗教団体への参加を強制することは含まれない。被告人の信仰については個人の自由を尊重し、強制的な参加は不適切である。それ以外の支援は、被告人の社会復帰や更生を支援するために有効な活動である。",
+    "group": "common_social",
+    "categoryLabel": "刑事司法と福祉",
+    "year": "2025_prediction",
+    "type": "prediction",
+    "isMastered": false,
+    "quality_score": 5
+  },
+  {
+    "id": "gen_criminal_fallback_c919230c",
+    "questionText": "司法ソーシャルワーカーが被告人の再犯防止のために行う介入として、最も適切なものはどれか？",
+    "options": [
+      "被告人に対して長期間の監視を行う。",
+      "家族やコミュニティと協力してのサポート体制の構築。",
+      "被告人の刑期延長を提案する。",
+      "被告人を孤立させて犯罪衝動を抑制する。",
+      "刑務所内での職務訓練の制限。"
+    ],
+    "correctAnswer": "2",
+    "explanation": "司法ソーシャルワーカーは、被告人の再犯を防ぐために家族やコミュニティとの協力を促し、サポート体制を整えることが重要である。これにより、被告人が再び犯罪を行うことなくコミュニティに安全に再統合できるようにする。",
+    "group": "common_social",
+    "categoryLabel": "刑事司法と福祉",
+    "year": "2025_prediction",
+    "type": "prediction",
+    "isMastered": false,
+    "quality_score": 5
+  },
+  {
+    "id": "gen_criminal_fallback_1c24bab5",
+    "questionText": "司法ソーシャルワーカーがコミュニティにおいて果たす役割として、正しいものはどれか？",
+    "options": [
+      "犯罪者を直ちに社会から隔離すること。",
+      "地域住民への被告人の悪行についての周知徹底。",
+      "コミュニティ・プログラムを通じた被告人の社会適応支援。",
+      "被告人への厳しい監視体制の敷設。",
+      "地域住民による自主警備の組織化。"
+    ],
+    "correctAnswer": "3",
+    "explanation": "司法ソーシャルワーカーは、コミュニティ・プログラムを通じて被告人が社会に適応し、再統合されるよう支援する役割を果たす。これにより、被告人が再び犯罪に手を染めることなく、社会で適応できるようにする。",
+    "group": "common_social",
+    "categoryLabel": "刑事司法と福祉",
+    "year": "2025_prediction",
+    "type": "prediction",
+    "isMastered": false,
+    "quality_score": 5
+  }
+]

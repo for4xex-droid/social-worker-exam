@@ -1,0 +1,14 @@
+{
+  "\u73fe\u4ee3\u306e\u7cbe\u795e\u4fdd\u5065\u306e\u8ab2\u984c\u3068\u652f\u63f4\\Book_0001.pdf": {
+    "last_chunk_idx": 22,
+    "status": "DONE"
+  },
+  "\u7cbe\u795e\u4fdd\u5065\u798f\u7949\u5236\u5ea6\u8ad6\\\u7cbe\u795e\u4fdd\u5065\u798f\u7949\u5236\u5ea6\u8ad6.pdf": {
+    "last_chunk_idx": 18,
+    "status": "DONE"
+  },
+  "\u7cbe\u795e\u969c\u5bb3\u30ea\u30cf\u30d3\u30ea\u30c6\u30fc\u30b7\u30e7\u30f3\\Book_0001.pdf": {
+    "last_chunk_idx": 7,
+    "status": "IN_PROGRESS"
+  }
+}
